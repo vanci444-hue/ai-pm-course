@@ -1,465 +1,1296 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 关键人物关系图</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<title>AI 产品经理培训课程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    background: #0d0f14;
-    color: #e2e8f0;
-    font-family: 'SF Pro Display', -apple-system, 'PingFang SC', sans-serif;
-    overflow: hidden;
-    height: 100vh;
-  }
+/* ── TOKENS ────────────────────────────────────────────── */
+:root {
+  --amber:       #D4922A;
+  --amber-lit:   #F0A832;
+  --steel:       #5A8FBB;
+  --violet:      #9B72D0;
+  --jade:        #4A9B80;
+  --rose:        #C45A70;
+}
 
-  #header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    padding: 16px 28px;
-    background: rgba(13,15,20,0.9);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+[data-theme="dark"] {
+  --bg:          #0A0908;
+  --bg2:         #111009;
+  --bg3:         #1A1815;
+  --rule:        #1E1C19;
+  --rule2:       #2C2A26;
+  --text:        #D8D4CB;
+  --mid:         #9A9590;
+  --dim:         #60605A;
+  --bright:      #F0EDE6;
+  --accent:      #D4922A;
+  --accent2:     #F0A832;
+  --ghost:       rgba(240,237,230,0.025);
+  --card-bg:     #13120F;
+  --noise-op:    0.028;
+}
+[data-theme="light"] {
+  --bg:          #F6F2EC;
+  --bg2:         #FDFAF5;
+  --bg3:         #EDE9E2;
+  --rule:        #DDD8D0;
+  --rule2:       #C8C2B8;
+  --text:        #2A2520;
+  --mid:         #6A6055;
+  --dim:         #9A9080;
+  --bright:      #0A0908;
+  --accent:      #B07820;
+  --accent2:     #C88A28;
+  --ghost:       rgba(10,9,8,0.03);
+  --card-bg:     #FAFAF7;
+  --noise-op:    0.018;
+}
 
-  #header h1 {
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: #f1f5f9;
-  }
+/* ── RESET ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
-  #header p {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 2px;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', 'Noto Serif SC', -apple-system, 'PingFang SC', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.35s, color 0.35s;
+}
 
-  .legend {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-  }
+/* paper-grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--noise-op);
+  pointer-events: none;
+  z-index: 9998;
+}
 
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: #94a3b8;
-  }
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 36px;
+}
 
-  .legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
+/* ── HEADER ─────────────────────────────────────────────── */
+header {
+  padding: 72px 0 52px;
+  border-bottom: 1px solid var(--rule2);
+  position: relative;
+  overflow: hidden;
+}
 
-  #canvas {
-    width: 100vw;
-    height: 100vh;
-    padding-top: 60px;
-  }
+.h-ghost {
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  transform: translateY(-50%);
+  font-family: 'Syne', sans-serif;
+  font-size: min(26vw, 300px);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  opacity: 1;
+}
+[data-theme="dark"]  .h-ghost { -webkit-text-stroke: 1px rgba(240,237,230,0.04); }
+[data-theme="light"] .h-ghost { -webkit-text-stroke: 1px rgba(10,9,8,0.06); }
 
-  svg {
-    width: 100%;
-    height: 100%;
-  }
+.h-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+.h-kicker::before {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
 
-  .link {
-    stroke-opacity: 0.35;
-    stroke-width: 1.5;
-  }
+h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(30px, 5.5vw, 60px);
+  font-weight: 700;
+  color: var(--bright);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+h1 .em { color: var(--accent); }
 
-  .link-label {
-    font-size: 9px;
-    fill: #64748b;
-    pointer-events: none;
-    text-anchor: middle;
-  }
+.h-sub {
+  font-size: 15px;
+  color: var(--mid);
+  max-width: 480px;
+  line-height: 1.85;
+  margin-bottom: 44px;
+  font-weight: 400;
+}
 
-  .node-group {
-    cursor: pointer;
-  }
+.h-stats {
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+.stat { display: flex; flex-direction: column; gap: 3px; }
+.stat-n {
+  font-family: 'Syne', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--bright);
+  line-height: 1;
+}
+.stat-n sup {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  vertical-align: top;
+  margin-top: 5px;
+}
+.stat-l {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
 
-  .node-group:hover .node-ring {
-    stroke-opacity: 0.8;
-    stroke-width: 2.5;
-  }
+/* ── NAV / TABS ─────────────────────────────────────────── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.35s;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
 
-  .node-ring {
-    stroke-width: 2;
-    stroke-opacity: 0.5;
-    fill: none;
-    transition: all 0.2s;
-  }
+.tab-btn {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 17px 32px 17px 0;
+  margin-right: 4px;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 32px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.tab-btn.active { color: var(--bright); }
+.tab-btn.active::after { transform: scaleX(1); }
+.tab-btn:hover:not(.active) { color: var(--mid); }
 
-  .node-circle {
-    stroke-width: 0;
-  }
+.theme-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  padding: 5px 13px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.theme-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  .node-initials {
-    font-size: 11px;
-    font-weight: 700;
-    fill: rgba(255,255,255,0.92);
-    text-anchor: middle;
-    dominant-baseline: central;
-    pointer-events: none;
-  }
+/* ── PANES ──────────────────────────────────────────────── */
+.pane { display: none; padding-top: 52px; padding-bottom: 80px; }
+.pane.active { display: block; }
 
-  .node-name {
-    font-size: 10px;
-    font-weight: 600;
-    fill: #e2e8f0;
-    text-anchor: middle;
-    pointer-events: none;
-  }
+/* ── COURSE OUTLINE ─────────────────────────────────────── */
 
-  .node-sub {
-    font-size: 8.5px;
-    fill: #64748b;
-    text-anchor: middle;
-    pointer-events: none;
-  }
+/* week block */
+.wk {
+  margin-bottom: 60px;
+  animation: up 0.45s both;
+}
+.wk:nth-child(1) { animation-delay: 0.04s; }
+.wk:nth-child(2) { animation-delay: 0.08s; }
+.wk:nth-child(3) { animation-delay: 0.12s; }
+.wk:nth-child(4) { animation-delay: 0.16s; }
+.wk:nth-child(5) { animation-delay: 0.20s; }
+.wk:nth-child(6) { animation-delay: 0.24s; }
 
-  /* Event nodes */
-  .event-label {
-    font-size: 9px;
-    font-weight: 700;
-    fill: #f97316;
-    text-anchor: middle;
-    pointer-events: none;
-  }
+@keyframes up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-  .event-sub {
-    font-size: 8px;
-    fill: #94a3b8;
-    text-anchor: middle;
-    pointer-events: none;
-  }
+/* week header */
+.wk-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule2);
+  margin-bottom: 0;
+  position: relative;
+}
 
-  /* Tooltip */
-  #tooltip {
-    position: fixed;
-    background: rgba(15,20,30,0.97);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 12px;
-    max-width: 240px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s;
-    z-index: 200;
-    line-height: 1.6;
-  }
+.wk-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 80px;
+  font-weight: 800;
+  line-height: 0.82;
+  color: transparent;
+  flex-shrink: 0;
+  min-width: 90px;
+}
 
-  #tooltip h3 {
-    font-size: 13px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    color: #f1f5f9;
-  }
+.wk-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+.wk-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.wk-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--bright);
+  line-height: 1.3;
+}
 
-  #tooltip p {
-    color: #94a3b8;
-    font-size: 11px;
-  }
+.wk-dates {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  padding-bottom: 8px;
+  align-self: flex-end;
+}
 
-  #tooltip .tag {
-    display: inline-block;
-    margin-top: 6px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-  }
+/* week color themes */
+.wk-01 .wk-num { -webkit-text-stroke: 1.5px var(--steel); }
+.wk-01 .wk-tag { color: var(--steel); }
+.wk-01 .wk-head { border-bottom-color: color-mix(in srgb, var(--steel) 30%, var(--rule2)); }
 
-  #hint {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    color: #334155;
-    pointer-events: none;
-  }
+.wk-02 .wk-num { -webkit-text-stroke: 1.5px var(--violet); }
+.wk-02 .wk-tag { color: var(--violet); }
+.wk-02 .wk-head { border-bottom-color: color-mix(in srgb, var(--violet) 30%, var(--rule2)); }
+
+.wk-03 .wk-num { -webkit-text-stroke: 1.5px var(--jade); }
+.wk-03 .wk-tag { color: var(--jade); }
+.wk-03 .wk-head { border-bottom-color: color-mix(in srgb, var(--jade) 30%, var(--rule2)); }
+
+.wk-04 .wk-num { -webkit-text-stroke: 1.5px var(--amber); }
+.wk-04 .wk-tag { color: var(--amber); }
+.wk-04 .wk-head { border-bottom-color: color-mix(in srgb, var(--amber) 30%, var(--rule2)); }
+
+.wk-05 .wk-num { -webkit-text-stroke: 1.5px var(--rose); }
+.wk-05 .wk-tag { color: var(--rose); }
+.wk-05 .wk-head { border-bottom-color: color-mix(in srgb, var(--rose) 30%, var(--rule2)); }
+
+/* day rows inside week */
+.wk-body { border: 1px solid var(--rule); border-top: none; }
+
+.day-row {
+  display: grid;
+  grid-template-columns: 56px 84px 110px 1fr;
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.12s;
+}
+.day-row:last-child { border-bottom: none; }
+.day-row:hover { background: var(--ghost); }
+
+.day-row-cont { border-top: none; }
+.day-row-cont .dc:first-child,
+.day-row-cont .dc:nth-child(2) {
+  border-right: none;
+  background: transparent;
+  visibility: hidden;
+}
+
+.dc {
+  padding: 14px 16px;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dc:last-child { border-right: none; }
+
+.d-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+}
+.d-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+.d-dow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+}
+.d-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--dim);
+  line-height: 1.65;
+}
+
+.sessions { display: flex; flex-direction: column; gap: 13px; }
+.session { display: flex; flex-direction: column; gap: 5px; }
+.s-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bright);
+  line-height: 1.4;
+}
+.s-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.stag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 1.5px 7px;
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  color: var(--dim);
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+/* graduation */
+.grad-block {
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  overflow: hidden;
+  animation: up 0.45s 0.26s both;
+}
+.grad-head {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+[data-theme="dark"] .grad-head { background: rgba(212,146,42,0.08); }
+[data-theme="light"] .grad-head { background: rgba(176,120,32,0.06); }
+
+.grad-icon { font-size: 18px; line-height: 1; }
+.grad-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent2);
+}
+[data-theme="light"] .grad-title { color: var(--accent); }
+
+.grad-body {
+  padding: 20px 24px;
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.gi-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bright);
+  margin-bottom: 5px;
+}
+.gi-desc {
+  font-size: 12px;
+  color: var(--dim);
+  line-height: 1.75;
+  max-width: 360px;
+}
+
+/* ── TOOL LIST ──────────────────────────────────────────── */
+
+.ts {
+  margin-bottom: 52px;
+  animation: up 0.45s both;
+}
+.ts:nth-child(1) { animation-delay: 0.04s; }
+.ts:nth-child(2) { animation-delay: 0.08s; }
+.ts:nth-child(3) { animation-delay: 0.12s; }
+.ts:nth-child(4) { animation-delay: 0.16s; }
+.ts:nth-child(5) { animation-delay: 0.20s; }
+
+.ts-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 13px;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--rule2);
+}
+
+.ts-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.ts-label {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bright);
+}
+.ts-cnt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  margin-left: auto;
+}
+
+/* section accent border */
+.ts-1 .ts-head { border-bottom-color: var(--steel); }
+.ts-2 .ts-head { border-bottom-color: var(--violet); }
+.ts-3 .ts-head { border-bottom-color: var(--jade); }
+.ts-4 .ts-head { border-bottom-color: var(--amber); }
+.ts-5 .ts-head { border-bottom-color: var(--rose); }
+
+.ts-note {
+  font-size: 12px;
+  color: var(--dim);
+  padding: 10px 0 0;
+  line-height: 1.65;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 10px;
+  margin-bottom: 0;
+}
+
+/* tool row */
+.trow {
+  display: grid;
+  grid-template-columns: 196px 78px 1fr minmax(0, 130px);
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 11px 0;
+  transition: background 0.12s;
+  cursor: default;
+}
+.trow:hover { background: var(--ghost); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+.trow:last-child { border-bottom: none; }
+
+.tn-wrap {
+  padding-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: nowrap;
+}
+.tn {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bright);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tbadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.te {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  padding-right: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.td {
+  font-size: 12px;
+  color: var(--mid);
+  line-height: 1.55;
+  padding-right: 16px;
+}
+.tl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  text-decoration: none;
+  text-align: right;
+  opacity: 0.65;
+  transition: opacity 0.2s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl:hover { opacity: 1; text-decoration: underline; }
+.tl-empty { display: block; } /* placeholder */
+
+/* ── BADGE COLORS ───────────────────────────────────────── */
+.tb-ai-dialog  { background: rgba(90,143,187,0.15); color: #5A8FBB; border: 1px solid rgba(90,143,187,0.28); }
+.tb-ai-code    { background: rgba(155,114,208,0.15); color: #9B72D0; border: 1px solid rgba(155,114,208,0.28); }
+.tb-ai-agent   { background: rgba(74,155,128,0.15); color: #4A9B80; border: 1px solid rgba(74,155,128,0.28); }
+.tb-ai-tool    { background: rgba(100,160,205,0.12); color: #64A0CD; border: 1px solid rgba(100,160,205,0.24); }
+.tb-ai-create  { background: rgba(190,130,185,0.13); color: #BE82B9; border: 1px solid rgba(190,130,185,0.26); }
+.tb-dev        { background: rgba(212,146,42,0.15); color: #D4922A; border: 1px solid rgba(212,146,42,0.28); }
+.tb-design     { background: rgba(196,90,112,0.15); color: #C45A70; border: 1px solid rgba(196,90,112,0.28); }
+.tb-data       { background: rgba(172,152,60,0.15); color: #AC983C; border: 1px solid rgba(172,152,60,0.28); }
+.tb-network    { background: rgba(110,110,110,0.12); color: #909090; border: 1px solid rgba(110,110,110,0.24); }
+.tb-account    { background: rgba(60,160,110,0.15); color: #3CA06E; border: 1px solid rgba(60,160,110,0.28); }
+.tb-content    { background: rgba(185,135,55,0.14); color: #B98737; border: 1px solid rgba(185,135,55,0.28); }
+.tb-social     { background: rgba(195,80,135,0.14); color: #C35087; border: 1px solid rgba(195,80,135,0.28); }
+.tb-career     { background: rgba(100,125,205,0.15); color: #647DCD; border: 1px solid rgba(100,125,205,0.28); }
+.tb-collab     { background: rgba(40,165,180,0.14); color: #28A5B4; border: 1px solid rgba(40,165,180,0.28); }
+.tb-meeting    { background: rgba(80,165,80,0.14); color: #50A550; border: 1px solid rgba(80,165,80,0.28); }
+.tb-cloud      { background: rgba(210,110,65,0.14); color: #D26E41; border: 1px solid rgba(210,110,65,0.28); }
+.tb-hardware   { background: rgba(145,145,145,0.12); color: #919191; border: 1px solid rgba(145,145,145,0.24); }
+.tb-efficiency { background: rgba(55,185,135,0.14); color: #37B987; border: 1px solid rgba(55,185,135,0.28); }
+.tb-doc        { background: rgba(80,130,195,0.14); color: #5082C3; border: 1px solid rgba(80,130,195,0.28); }
+.tb-api        { background: rgba(185,80,205,0.14); color: #B950CD; border: 1px solid rgba(185,80,205,0.28); }
+.tb-ref        { background: rgba(195,100,75,0.14); color: #C3644B; border: 1px solid rgba(195,100,75,0.28); }
+.tb-browser    { background: rgba(120,130,148,0.12); color: #788294; border: 1px solid rgba(120,130,148,0.24); }
+
+[data-theme="light"] .tbadge { opacity: 0.88; }
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 32px 0 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-brand {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px;
+  color: var(--dim);
+}
+.footer-brand .fa { color: var(--accent); font-style: normal; }
+.footer-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 680px) {
+  .wrap { padding: 0 16px; }
+  .nav-inner { padding: 0 16px; }
+  .day-row { grid-template-columns: 44px 72px 1fr; }
+  .dc-time { display: none; }
+  .trow { grid-template-columns: 1fr 1fr; }
+  .te, .tl { display: none; }
+  .td { grid-column: 1 / -1; }
+  h1 { font-size: 28px; }
+  .wk-num { font-size: 52px; min-width: 60px; }
+  .h-stats { gap: 28px; }
+}
+
 </style>
 </head>
 <body>
 
-<div id="header">
-  <div>
-    <h1>AI 关键人物关系图</h1>
-    <p>从图灵到 ChatGPT — 现代 AI 的人脉拓扑</p>
+<!-- HEADER -->
+<header>
+  <div class="wrap" style="position:relative;">
+    <div class="h-ghost">AIPM</div>
+    <div class="h-kicker">2026 · Intensive Bootcamp · 5 Weeks</div>
+    <h1>AI 产品经理<br><span class="em">2026 就业班</span></h1>
+    <p class="h-sub">从产品思维到大模型实战，系统进阶 AI 时代的产品经理</p>
+    <div class="h-stats">
+      <div class="stat"><span class="stat-n">5</span><span class="stat-l">Weeks</span></div>
+      <div class="stat"><span class="stat-n">25</span><span class="stat-l">Days</span></div>
+      <div class="stat"><span class="stat-n">40<sup>+</sup></span><span class="stat-l">Courses</span></div>
+      <div class="stat"><span class="stat-n">60<sup>+</sup></span><span class="stat-l">Tools</span></div>
+      <div class="stat"><span class="stat-n">∞</span><span class="stat-l">Career Support</span></div>
+    </div>
   </div>
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>先驱三巨头</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Hinton 学生</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Google/Transformer</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>OpenAI</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#0ea5e9"></div>学术/数据</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f97316;border-radius:0;transform:rotate(45deg);width:9px;height:9px"></div>关键事件</div>
+</header>
+
+<!-- NAV -->
+<nav class="nav-wrap">
+  <div class="nav-inner">
+    <button class="tab-btn active" onclick="switchTab('outline',this)">课程大纲</button>
+    <button class="tab-btn" onclick="switchTab('tools',this)">课前工具准备</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀ 亮色</button>
   </div>
+</nav>
+
+<!-- ════════════════════ TAB: OUTLINE ════════════════════ -->
+<div class="pane active" id="pane-outline">
+<div class="wrap">
+
+  <!-- WEEK 01 -->
+  <div class="wk wk-01">
+    <div class="wk-head">
+      <div class="wk-num">01</div>
+      <div class="wk-meta">
+        <div class="wk-tag">Week 01</div>
+        <div class="wk-title">产品进阶周</div>
+      </div>
+      <div class="wk-dates">5/18 — 5/22</div>
+    </div>
+    <div class="wk-body">
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 1</span></div>
+        <div class="dc"><span class="d-date">5-18</span><span class="d-dow">星期一</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">开营 + 自我介绍 + 《AI产品经理工具全景》</div>
+              <div class="s-tags"><span class="stag">AI工具生态地图</span><span class="stag">工具分类与场景</span><span class="stag">选型思维框架</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《产品经理初识》</div>
+              <div class="s-tags"><span class="stag">职业规划</span><span class="stag">AI PM vs 传统PM</span><span class="stag">就业市场现状</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 2</span></div>
+        <div class="dc"><span class="d-date">5-19</span><span class="d-dow">星期二</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《市场分析》《数据爬取》</div>
+              <div class="s-tags"><span class="stag">专业MRD制作</span><span class="stag">市场规模测算</span><span class="stag">数据爬取工具实操</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《产品商业逻辑》</div>
+              <div class="s-tags"><span class="stag">专业BRD制作</span><span class="stag">Token定价逻辑</span><span class="stag">算力成本核算</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 3</span></div>
+        <div class="dc"><span class="d-date">5-20</span><span class="d-dow">星期三</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《产品三要素｜用户 · 需求 · 场景》</div>
+              <div class="s-tags"><span class="stag">用户分析方法论</span><span class="stag">需求挖掘与优先级</span><span class="stag">场景建模</span><span class="stag">产品工作流程</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 4</span></div>
+        <div class="dc"><span class="d-date">5-21</span><span class="d-dow">星期四</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《AI产品竞品分析》《PRD撰写》</div>
+              <div class="s-tags"><span class="stag">竞品分析框架</span><span class="stag">功能对比矩阵</span><span class="stag">差异化定位</span><span class="stag">立项PRD结构</span><span class="stag">终稿PRD规范</span><span class="stag">技术PRD与研发对接</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《产品深度体验报告撰写》《交互原型》</div>
+              <div class="s-tags"><span class="stag">产品力分析</span><span class="stag">技术能力评估</span><span class="stag">原型工具实操</span><span class="stag">体验报告规范</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 5</span></div>
+        <div class="dc"><span class="d-date">5-22</span><span class="d-dow">星期五</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">本周作业点评</div>
+              <div class="s-tags"><span class="stag">优秀作业展示</span><span class="stag">逐条讲评</span><span class="stag">知识体系复盘</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《产品数据度量体系》《个人项目·立项A》</div>
+              <div class="s-tags"><span class="stag">数据埋点设计</span><span class="stag">增长设计思路</span><span class="stag">北极星指标</span><span class="stag">数据看板搭建</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK 02 -->
+  <div class="wk wk-02">
+    <div class="wk-head">
+      <div class="wk-num">02</div>
+      <div class="wk-meta">
+        <div class="wk-tag">Week 02</div>
+        <div class="wk-title">大模型基础周</div>
+      </div>
+      <div class="wk-dates">5/26 — 5/30</div>
+    </div>
+    <div class="wk-body">
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 1</span></div>
+        <div class="dc"><span class="d-date">5-26</span><span class="d-dow">星期二</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《大模型初识》</div>
+              <div class="s-tags"><span class="stag">Transformer架构概览</span><span class="stag">主流模型谱系</span><span class="stag">预训练 vs 微调 vs RAG</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 2</span></div>
+        <div class="dc"><span class="d-date">5-27</span><span class="d-dow">星期三</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Prompt Engineering》</div>
+              <div class="s-tags"><span class="stag">User Prompt结构化写法</span><span class="stag">System Prompt设计</span><span class="stag">Few-shot / CoT技巧</span><span class="stag">Prompt调试方法论</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 3</span></div>
+        <div class="dc"><span class="d-date">5-28</span><span class="d-dow">星期四</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《多模态模型》</div>
+              <div class="s-tags"><span class="stag">文生图 / 图生文</span><span class="stag">音视频理解</span><span class="stag">AI生图工具实操</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《大模型技术：RAG》</div>
+              <div class="s-tags"><span class="stag">RAG基础原理</span><span class="stag">向量数据库</span><span class="stag">知识库构建</span><span class="stag">Embedding与检索</span><span class="stag">分块策略</span><span class="stag">Rerank机制</span><span class="stag">落地案例拆解</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 4</span></div>
+        <div class="dc"><span class="d-date">5-29</span><span class="d-dow">星期五</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《模型选型与效果评估》</div>
+              <div class="s-tags"><span class="stag">模型横向对比</span><span class="stag">效果评估指标</span><span class="stag">成本与效果平衡</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 5</span></div>
+        <div class="dc"><span class="d-date">5-30</span><span class="d-dow">星期六</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">本周作业点评</div>
+              <div class="s-tags"><span class="stag">优秀作业展示</span><span class="stag">大模型常见误区</span><span class="stag">知识体系复盘</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《个人影响力体系》</div>
+              <div class="s-tags"><span class="stag">Vibe Writing方法论</span><span class="stag">AI辅助内容创作</span><span class="stag">个人品牌定位</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK 03 -->
+  <div class="wk wk-03">
+    <div class="wk-head">
+      <div class="wk-num">03</div>
+      <div class="wk-meta">
+        <div class="wk-tag">Week 03</div>
+        <div class="wk-title">大模型进阶周</div>
+      </div>
+      <div class="wk-dates">6/2 — 6/6</div>
+    </div>
+    <div class="wk-body">
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 1</span></div>
+        <div class="dc"><span class="d-date">6-2</span><span class="d-dow">星期二</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《大模型技术：Function Calling · Skills · MCP · CLI》</div>
+              <div class="s-tags"><span class="stag">Function Calling</span><span class="stag">MCP原理与实战</span><span class="stag">CLI自动化脚本</span><span class="stag">理解Agent底层逻辑</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 2</span></div>
+        <div class="dc"><span class="d-date">6-3</span><span class="d-dow">星期三</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Agent实战 + 案例 ToC（上）》</div>
+              <div class="s-tags"><span class="stag">ReAct / Plan-and-Execute</span><span class="stag">ToC场景案例拆解</span><span class="stag">Agent交互规范</span><span class="stag">容错与安全边界</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 3</span></div>
+        <div class="dc"><span class="d-date">6-4</span><span class="d-dow">星期四</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Agent实战 + 案例 ToB（下）》《OpenClaw案例拆解》《Hermes》</div>
+              <div class="s-tags"><span class="stag">ToB Agent落地路径</span><span class="stag">流程自动化</span><span class="stag">OpenClaw深度拆解</span><span class="stag">企业级交付标准</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 4</span></div>
+        <div class="dc"><span class="d-date">6-5</span><span class="d-dow">星期五</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《AI开发环境搭建 &amp; LangChain入门》</div>
+              <div class="s-tags"><span class="stag">本地环境配置</span><span class="stag">LangChain核心组件</span><span class="stag">Chain / Memory / Agent</span><span class="stag">跑通第一个AI原型</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 5</span></div>
+        <div class="dc"><span class="d-date">6-6</span><span class="d-dow">星期六</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">本周作业点评</div>
+              <div class="s-tags"><span class="stag">优秀作业展示</span><span class="stag">Agent高频问题复盘</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《个人项目·立项B》</div>
+              <div class="s-tags"><span class="stag">项目方向确定</span><span class="stag">立项文档撰写</span><span class="stag">导师一对一答疑</span><span class="stag">可行性评估</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK 04 -->
+  <div class="wk wk-04">
+    <div class="wk-head">
+      <div class="wk-num">04</div>
+      <div class="wk-meta">
+        <div class="wk-tag">Week 04</div>
+        <div class="wk-title">大模型实战周</div>
+      </div>
+      <div class="wk-dates">6/9 — 6/13</div>
+    </div>
+    <div class="wk-body">
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 1</span></div>
+        <div class="dc"><span class="d-date">6-9</span><span class="d-dow">星期二</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Claude 精讲入门》《Obsidian》</div>
+              <div class="s-tags"><span class="stag">Claude特性与技巧</span><span class="stag">System Prompt进阶</span><span class="stag">Obsidian知识管理</span><span class="stag">AI辅助知识库工作流</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 2</span></div>
+        <div class="dc"><span class="d-date">6-10</span><span class="d-dow">星期三</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Dify 入门 + 实战案例》《Claude Managed Agents》</div>
+              <div class="s-tags"><span class="stag">Dify全流程搭建</span><span class="stag">Workflow / Chatflow设计</span><span class="stag">Managed Agents架构</span><span class="stag">低代码AI落地</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 3</span></div>
+        <div class="dc"><span class="d-date">6-11</span><span class="d-dow">星期四</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Vibe Coding（上）》</div>
+              <div class="s-tags"><span class="stag">Vibe Coding方法论</span><span class="stag">Cursor / Claude Code</span><span class="stag">需求转代码Prompt</span><span class="stag">搭建第一个AI产品页面</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 4</span></div>
+        <div class="dc"><span class="d-date">6-12</span><span class="d-dow">星期五</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《Vibe Coding（下）》</div>
+              <div class="s-tags"><span class="stag">完整产品原型开发</span><span class="stag">前后端联调基础</span><span class="stag">数据库与API接入</span><span class="stag">项目代码实现陪跑</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 5</span></div>
+        <div class="dc"><span class="d-date">6-13</span><span class="d-dow">星期六</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">本周作业点评</div>
+              <div class="s-tags"><span class="stag">项目阶段性成果</span><span class="stag">代码与产品设计问题</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《AI产品上线与观测闭环》</div>
+              <div class="s-tags"><span class="stag">域名/服务器/云部署</span><span class="stag">Vercel快速上线</span><span class="stag">GA埋点与核心事件</span><span class="stag">Sentry错误监控</span><span class="stag">迭代决策闭环</span><span class="stag">灰度发布与A/B test</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《AI产品安全基础｜PM必懂的安全边界》</div>
+              <div class="s-tags"><span class="stag">Prompt Injection攻防</span><span class="stag">数据泄露风险</span><span class="stag">OWASP LLM Top 10</span><span class="stag">安全Checklist</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《AI产品评估框架》</div>
+              <div class="s-tags"><span class="stag">线上评估指标体系</span><span class="stag">效果 vs 成本 vs 体验</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK 05 -->
+  <div class="wk wk-05">
+    <div class="wk-head">
+      <div class="wk-num">05</div>
+      <div class="wk-meta">
+        <div class="wk-tag">Week 05</div>
+        <div class="wk-title">简历梳理周</div>
+      </div>
+      <div class="wk-dates">6/16 — 6/23</div>
+    </div>
+    <div class="wk-body">
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 1</span></div>
+        <div class="dc"><span class="d-date">6-16</span><span class="d-dow">星期二</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《项目梳理技巧》</div>
+              <div class="s-tags"><span class="stag">STAR法则与AI场景</span><span class="stag">项目亮点提炼</span><span class="stag">量化成果表达框架</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 2</span></div>
+        <div class="dc"><span class="d-date">6-17</span><span class="d-dow">星期三</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《个人经历梳理代练》</div>
+              <div class="s-tags"><span class="stag">学员上台梳理</span><span class="stag">导师现场改写示范</span><span class="stag">经历素材库建立</span><span class="stag">跨行转型表达</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 3</span></div>
+        <div class="dc"><span class="d-date">6-18</span><span class="d-dow">星期四</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《个人作品集 &amp; 网站搭建》</div>
+              <div class="s-tags"><span class="stag">作品集结构设计</span><span class="stag">Notion / Framer / GitHub Pages</span><span class="stag">差异化定位策略</span></div>
+            </div>
+            <div class="session">
+              <div class="s-title">《简历撰写 &amp; 面试技巧》《模拟面试实战》</div>
+              <div class="s-tags"><span class="stag">简历结构规范</span><span class="stag">高频面试题拆解</span><span class="stag">两两对练模拟面试</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 4</span></div>
+        <div class="dc"><span class="d-date">6-19</span><span class="d-dow">星期五</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《投递简历专攻技巧》</div>
+              <div class="s-tags"><span class="stag">目标岗位筛选</span><span class="stag">JD关键词匹配</span><span class="stag">内推渠道建立</span><span class="stag">投递节奏策略</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-row">
+        <div class="dc"><span class="d-label">Day 5</span></div>
+        <div class="dc"><span class="d-date">6-23</span><span class="d-dow">星期二</span></div>
+        <div class="dc dc-time"><span class="d-time">全天 10:00–17:30</span></div>
+        <div class="dc">
+          <div class="sessions">
+            <div class="session">
+              <div class="s-title">《项目汇报》</div>
+              <div class="s-tags"><span class="stag">个人项目成果汇报</span><span class="stag">导师与同学交叉点评</span><span class="stag">毕业典礼 &amp; 结营仪式</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRADUATION -->
+  <div class="grad-block">
+    <div class="grad-head">
+      <span class="grad-icon">🎓</span>
+      <span class="grad-title">毕业后｜本期无限期求职陪跑</span>
+    </div>
+    <div class="grad-body">
+      <div>
+        <div class="gi-title">深度求职辅导 &amp; 陪跑答疑</div>
+        <div class="gi-desc">毕业日起，本期无限期，提前约老师，深度求职辅导及陪跑答疑</div>
+      </div>
+      <div>
+        <div class="gi-title">简历 / 面试辅导</div>
+        <div class="gi-desc">本期不限次数，随时预约，简历辅导与面试辅导全程支持</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+</div><!-- /pane-outline -->
+
+
+<!-- ════════════════════ TAB: TOOLS ════════════════════ -->
+<div class="pane" id="pane-tools">
+<div class="wrap">
+
+  <!-- Section 1 -->
+  <div class="ts ts-1">
+    <div class="ts-head">
+      <span class="ts-num">01</span>
+      <span class="ts-label">开课前必备</span>
+      <span class="ts-cnt">6 items</span>
+    </div>
+    <div class="ts-note">以下内容必须在开课前完成，缺少任何一项将影响上课体验。</div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">M芯片 Macbook</span><span class="tbadge tb-hardware">硬件</span></div><div class="te">实体工具</div><div class="td">Apple M 系列芯片 Mac 笔记本，配置不限</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Google 账号</span><span class="tbadge tb-account">账号</span></div><div class="te">web</div><div class="td">注册众多境外工具的基础账号，必须提前准备</div><a class="tl" href="https://accounts.google.com" target="_blank">accounts.google.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Google 邮箱</span><span class="tbadge tb-account">账号</span></div><div class="te">web / app</div><div class="td">Gmail，境外服务注册的常用邮箱</div><a class="tl" href="https://mail.google.com" target="_blank">mail.google.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Apple ID 美国账号</span><span class="tbadge tb-account">账号</span></div><div class="te">web</div><div class="td">用于下载境外 App Store 中的应用</div><a class="tl" href="https://appleid.apple.com" target="_blank">appleid.apple.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">梯子</span><span class="tbadge tb-network">网络工具</span></div><div class="te">web</div><div class="td">访问境外网络的代理工具，课程必备</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">豆包输入法</span><span class="tbadge tb-efficiency">效率工具</span></div><div class="te">web / 客户端</div><div class="td">字节跳动出品的 AI 输入法，支持 AI 写作辅助与语音输入</div><a class="tl" href="https://drive.google.com/file/d/1Xd6loD9vSp47xbqy56TOgFGPhl5guiQr/view" target="_blank">下载链接 ↗</a></div>
+  </div>
+
+  <!-- Section 2 -->
+  <div class="ts ts-2">
+    <div class="ts-head">
+      <span class="ts-num">02</span>
+      <span class="ts-label">完成注册登录（用 Google 账号）</span>
+      <span class="ts-cnt">23 items</span>
+    </div>
+    <div class="ts-note">以下工具均支持 Google 账号一键注册，提前登录备用。</div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Vultr</span><span class="tbadge tb-cloud">云服务器</span></div><div class="te">web</div><div class="td">境外云服务器提供商，可用于自建代理节点</div><a class="tl" href="https://www.vultr.com" target="_blank">vultr.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Obsidian</span><span class="tbadge tb-doc">文档工具</span></div><div class="te">客户端 / app</div><div class="td">本地 Markdown 笔记工具，支持双向链接与知识图谱</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Coze 国际版</span><span class="tbadge tb-ai-agent">AI Agent</span></div><div class="te">web</div><div class="td">字节跳动出品的 AI Agent 搭建平台，无需代码即可构建</div><a class="tl" href="https://www.coze.com" target="_blank">coze.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Dify</span><span class="tbadge tb-ai-agent">AI Agent</span></div><div class="te">web</div><div class="td">开源 LLM 应用开发平台，支持 RAG 与 Agent 工作流</div><a class="tl" href="https://dify.ai" target="_blank">dify.ai ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Youtube</span><span class="tbadge tb-content">内容平台</span></div><div class="te">web / app</div><div class="td">全球最大视频平台，用于学习内容与趋势研究</div><a class="tl" href="https://www.youtube.com" target="_blank">youtube.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Cursor</span><span class="tbadge tb-ai-code">AI 编程</span></div><div class="te">web / 客户端</div><div class="td">集成 AI 的代码编辑器，支持对话式编程与代码生成</div><a class="tl" href="https://www.cursor.com" target="_blank">cursor.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Github</span><span class="tbadge tb-dev">开发工具</span></div><div class="te">web</div><div class="td">全球最大代码托管平台，用于版本管理与开源协作</div><a class="tl" href="https://github.com" target="_blank">github.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Vercel</span><span class="tbadge tb-dev">开发工具</span></div><div class="te">web</div><div class="td">前端应用部署平台，一键部署 Web 项目，免运维</div><a class="tl" href="https://vercel.com" target="_blank">vercel.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">SimilarWeb</span><span class="tbadge tb-data">数据分析</span></div><div class="te">web</div><div class="td">全球流量分析工具，用于竞品研究与市场调研</div><a class="tl" href="https://www.similarweb.com" target="_blank">similarweb.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Aihubmix</span><span class="tbadge tb-api">API 中转</span></div><div class="te">web</div><div class="td">AI 模型 API 中转平台，聚合多家主流模型，国内可用</div><a class="tl" href="https://aihubmix.com" target="_blank">aihubmix.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">openrouter</span><span class="tbadge tb-api">API 中转</span></div><div class="te">web</div><div class="td">境外 AI 模型 API 路由平台，按用量计费，模型选择丰富</div><a class="tl" href="https://openrouter.ai" target="_blank">openrouter.ai ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Chrome</span><span class="tbadge tb-browser">浏览器</span></div><div class="te">客户端 / app</div><div class="td">谷歌出品的主流浏览器，支持丰富扩展插件生态</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">X（Twitter）</span><span class="tbadge tb-social">社交媒体</span></div><div class="te">web / app</div><div class="td">全球主流社交平台，跟踪 AI 行业动态与一手信息的首选</div><a class="tl" href="https://x.com" target="_blank">x.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Instagram</span><span class="tbadge tb-social">社交媒体</span></div><div class="te">web / app</div><div class="td">图片与短视频社交平台，了解海外内容与视觉趋势</div><a class="tl" href="https://www.instagram.com" target="_blank">instagram.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Threads</span><span class="tbadge tb-social">社交媒体</span></div><div class="te">app</div><div class="td">Meta 出品的文字社交平台，Instagram 的配套社区</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Cherry Studio</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">客户端</div><div class="td">多模型 AI 桌面客户端，支持同时接入多种 LLM API</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">youmind</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">web</div><div class="td">AI 驱动的思维导图与知识整理工具</div><a class="tl" href="https://youmind.ai" target="_blank">youmind.ai ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">mobbin</span><span class="tbadge tb-ref">设计参考</span></div><div class="te">web</div><div class="td">移动端与 Web App UI 设计案例库，设计灵感参考神器</div><a class="tl" href="https://mobbin.com" target="_blank">mobbin.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">通义听悟</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">web</div><div class="td">阿里出品的 AI 会议录音转写与摘要工具</div><a class="tl" href="https://tingwu.aliyun.com" target="_blank">tingwu.aliyun.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Tabbit（国际版）</span><span class="tbadge tb-browser">浏览器</span></div><div class="te">客户端 / app</div><div class="td">AI 驱动的习惯追踪与个人成长管理应用</div><a class="tl" href="https://www.tabbit-ai.com" target="_blank">tabbit-ai.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Zoom</span><span class="tbadge tb-meeting">会议工具</span></div><div class="te">客户端</div><div class="td">国际主流视频会议工具，音视频质量稳定</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">NotebookLM</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">web</div><div class="td">谷歌出品的 AI 笔记工具，可上传资料后智能问答与播客生成</div><a class="tl" href="https://notebooklm.google.com" target="_blank">notebooklm.google.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Whimsical</span><span class="tbadge tb-design">设计工具</span></div><div class="te">web</div><div class="td">在线协作白板，支持流程图、思维导图与线框图绘制</div><a class="tl" href="https://whimsical.com" target="_blank">whimsical.com ↗</a></div>
+  </div>
+
+  <!-- Section 3 -->
+  <div class="ts ts-3">
+    <div class="ts-head">
+      <span class="ts-num">03</span>
+      <span class="ts-label">完成注册登录（邮箱或手机号注册）</span>
+      <span class="ts-cnt">23 items</span>
+    </div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Clash Verge</span><span class="tbadge tb-network">网络工具</span></div><div class="te">web</div><div class="td">基于 Clash 内核的代理客户端，支持多种协议</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">飞书</span><span class="tbadge tb-collab">效率协作</span></div><div class="te">客户端 / app</div><div class="td">字节跳动出品的企业协作工具，课程文档与通讯使用</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Figma</span><span class="tbadge tb-design">设计工具</span></div><div class="te">web / 客户端</div><div class="td">专业 UI/UX 设计工具，支持实时多人协作</div><a class="tl" href="https://www.figma.com" target="_blank">figma.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">七麦数据</span><span class="tbadge tb-data">数据分析</span></div><div class="te">web</div><div class="td">国内 App 市场数据平台，用于 ASO 与竞品分析</div><a class="tl" href="https://www.qimai.cn" target="_blank">qimai.cn ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">DeepSeek</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">web / app</div><div class="td">深度求索出品的高性能 AI 模型，性价比突出</div><a class="tl" href="https://www.deepseek.com" target="_blank">deepseek.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">豆包</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">web / app</div><div class="td">字节跳动出品的 AI 助手，支持对话、写作与搜索</div><a class="tl" href="https://www.doubao.com" target="_blank">doubao.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">MiniMax</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">app</div><div class="td">国内 AI 公司，旗下模型能力强，有语音与图像生成产品</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Kimi</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">app</div><div class="td">月之暗面出品，支持超长上下文，擅长文档阅读与分析</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">元宝</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">app</div><div class="td">腾讯出品的 AI 助手，深度集成微信生态</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">千问</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">app</div><div class="td">阿里巴巴出品的大语言模型与 AI 助手（通义千问）</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">即梦</span><span class="tbadge tb-ai-create">AI 创作</span></div><div class="te">web / app</div><div class="td">字节跳动出品的 AI 图片与视频生成工具</div><a class="tl" href="https://jimeng.jianying.com" target="_blank">jimeng.jianying.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">灵光</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">app</div><div class="td">AI 灵感捕捉与创意整理工具</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">灵光 AI</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">web / app</div><div class="td">AI 创意与灵感生成工具</div><a class="tl" href="https://www.linggpt.com" target="_blank">linggpt.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">OneThing AI</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">web</div><div class="td">AI 驱动的任务与目标管理工具</div><a class="tl" href="https://www.onething.ai" target="_blank">onething.ai ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">火山引擎</span><span class="tbadge tb-cloud">云服务</span></div><div class="te">web</div><div class="td">字节跳动旗下云计算平台，提供 AI 推理、大数据与存储服务</div><a class="tl" href="https://www.volcengine.com" target="_blank">volcengine.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">少数派</span><span class="tbadge tb-content">内容平台</span></div><div class="te">web / app</div><div class="td">数字生活方式媒体，聚焦效率工具、科技与生产力内容</div><a class="tl" href="https://sspai.com" target="_blank">sspai.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">微信公众号</span><span class="tbadge tb-content">内容平台</span></div><div class="te">web</div><div class="td">微信内容创作与运营平台，国内最大的图文内容载体</div><a class="tl" href="https://mp.weixin.qq.com" target="_blank">mp.weixin.qq.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">人人都是产品经理</span><span class="tbadge tb-content">内容平台</span></div><div class="te">web / app</div><div class="td">国内最大的产品经理社区，产品方法论与行业资讯聚集地</div><a class="tl" href="https://www.woshipm.com" target="_blank">woshipm.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">B站</span><span class="tbadge tb-content">内容平台</span></div><div class="te">web / app</div><div class="td">国内最大视频弹幕社区，用于内容学习与创作趋势研究</div><a class="tl" href="https://www.bilibili.com" target="_blank">bilibili.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">抖音精选</span><span class="tbadge tb-content">内容平台</span></div><div class="te">app</div><div class="td">抖音优质内容频道，了解国内短视频内容趋势</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">小红书</span><span class="tbadge tb-social">社交媒体</span></div><div class="te">web / app</div><div class="td">图文与短视频种草社区，了解消费者行为与生活方式趋势</div><a class="tl" href="https://www.xiaohongshu.com" target="_blank">xiaohongshu.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">腾讯会议</span><span class="tbadge tb-meeting">会议工具</span></div><div class="te">客户端</div><div class="td">国内最常用的视频会议工具，与微信生态深度集成</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">钉钉</span><span class="tbadge tb-collab">效率协作</span></div><div class="te">客户端</div><div class="td">阿里巴巴出品的企业办公协作平台</div><span></span></div>
+  </div>
+
+  <!-- Section 4 -->
+  <div class="ts ts-4">
+    <div class="ts-head">
+      <span class="ts-num">04</span>
+      <span class="ts-label">下载好，先不注册</span>
+      <span class="ts-cnt">9 items</span>
+    </div>
+    <div class="ts-note">以下工具提前下载安装，课程中按需引导注册。</div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Claude</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">客户端</div><div class="td">Anthropic 出品的 AI 助手，擅长长文本分析与代码编写</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Codex</span><span class="tbadge tb-ai-code">AI 编程</span></div><div class="te">客户端</div><div class="td">OpenAI 推出的 AI 编程 Agent，可在终端自主执行编程任务</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">ChatGPT</span><span class="tbadge tb-ai-dialog">AI 对话</span></div><div class="te">web / app</div><div class="td">OpenAI 出品的 AI 对话产品，全球使用最广泛的 AI 助手</div><a class="tl" href="https://chat.openai.com" target="_blank">chat.openai.com ↗</a></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Expo</span><span class="tbadge tb-dev">开发工具</span></div><div class="te">app</div><div class="td">React Native 应用开发框架，快速构建跨平台移动应用</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Elys</span><span class="tbadge tb-ai-tool">AI 工具</span></div><div class="te">app</div><div class="td">AI 驱动的手机端 Agent 应用</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">脉脉</span><span class="tbadge tb-career">职场社交</span></div><div class="te">app</div><div class="td">职场人际关系与职场资讯平台，匿名爆料与招聘信息丰富</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Boss 直聘</span><span class="tbadge tb-career">招聘平台</span></div><div class="te">app</div><div class="td">直连招聘平台，求职者可直接与 Boss 对话</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">猎聘</span><span class="tbadge tb-career">招聘平台</span></div><div class="te">app</div><div class="td">中高端人才招聘平台，猎头资源丰富</div><span></span></div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">LinkedIn</span><span class="tbadge tb-career">职场社交</span></div><div class="te">web / app</div><div class="td">全球职场社交与招聘平台，建立海外职业人脉首选</div><a class="tl" href="https://www.linkedin.com" target="_blank">linkedin.com ↗</a></div>
+  </div>
+
+  <!-- Section 5 -->
+  <div class="ts ts-5">
+    <div class="ts-head">
+      <span class="ts-num">05</span>
+      <span class="ts-label">课上安装</span>
+      <span class="ts-cnt">1 item</span>
+    </div>
+    <div class="tool-row"><div class="tn-wrap"><span class="tn">Python</span><span class="tbadge tb-dev">开发工具</span></div><div class="te">终端</div><div class="td">主流编程语言，课程用于 AI 工具开发与自动化脚本</div><span></span></div>
+  </div>
+
+</div><!-- /wrap -->
+</div><!-- /pane-tools -->
+
+<!-- FOOTER -->
+<div class="wrap">
+  <footer class="site-footer">
+    <div class="footer-brand"><span class="fa">AI 产品经理</span>培训课程 · 2026</div>
+    <div class="footer-meta">DESIGNED BY EVAN · 5 WEEKS · 60+ TOOLS</div>
+  </footer>
 </div>
 
-<div id="canvas"><svg id="svg"></svg></div>
-<div id="tooltip"></div>
-<div id="hint">拖拽节点 · 悬停查看详情 · 滚轮缩放</div>
-
 <script>
-const W = window.innerWidth;
-const H = window.innerHeight - 60;
-const cx = W / 2, cy = H / 2;
-
-// ─── DATA ───────────────────────────────────────────────
-const nodes = [
-  // Pioneers
-  { id: "turing",   name: "Alan Turing", sub: "图灵·AI之父", initials: "AT", color: "#f59e0b", r: 34, group: "pioneer",
-    bio: "1950年提出「机器能思考吗？」，发明图灵测试，奠定整个AI学科的理论基础。", tag: "先驱", x: cx, y: cy - 250 },
-
-  { id: "hinton",   name: "Geoffrey Hinton", sub: "深度学习教父", initials: "GH", color: "#f59e0b", r: 36, group: "pioneer",
-    bio: "反复押注神经网络30年，2006年推动深度学习复兴。2018年与LeCun、Bengio共获图灵奖。2023年离开Google警示AI风险。", tag: "先驱三巨头", x: cx - 180, y: cy - 80 },
-
-  { id: "lecun",    name: "Yann LeCun", sub: "CNN之父·Meta AI", initials: "YL", color: "#f59e0b", r: 30, group: "pioneer",
-    bio: "卷积神经网络（CNN）发明者，Meta AI首席科学家。与Hinton、Bengio并称「深度学习三巨头」，2018年图灵奖。", tag: "先驱三巨头", x: cx - 360, y: cy + 60 },
-
-  { id: "bengio",   name: "Yoshua Bengio", sub: "蒙特利尔·序列模型", initials: "YB", color: "#f59e0b", r: 30, group: "pioneer",
-    bio: "序列模型与注意力机制早期奠基人，Mila实验室创始人，2018年图灵奖。致力于AI安全与伦理研究。", tag: "先驱三巨头", x: cx - 360, y: cy - 220 },
-
-  // Hinton students
-  { id: "alex",     name: "Alex Krizhevsky", sub: "AlexNet作者", initials: "AK", color: "#3b82f6", r: 26, group: "student",
-    bio: "Hinton博士生，2012年与Hinton、Ilya合作创造AlexNet，以大幅领先优势赢得ImageNet，引爆深度学习革命。", tag: "Hinton门徒", x: cx - 60, y: cy + 120 },
-
-  { id: "ilya",     name: "Ilya Sutskever", sub: "OpenAI联合创始人", initials: "IS", color: "#3b82f6", r: 30, group: "student",
-    bio: "Hinton最优秀的学生之一，AlexNet三作者之一。与Musk等人共同创立OpenAI，担任首席科学家，推动GPT系列发展。", tag: "Hinton门徒", x: cx + 60, y: cy + 60 },
-
-  // Data/Academia
-  { id: "feifei",   name: "Fei-Fei Li", sub: "李飞飞·ImageNet", initials: "FL", color: "#0ea5e9", r: 30, group: "data",
-    bio: "斯坦福AI Lab主任，2009年创建ImageNet数据集（120万张图）。ImageNet竞赛成为检验深度学习的擂台，直接触发2012年革命。", tag: "数据/学术", x: cx + 220, y: cy - 180 },
-
-  // Google / Transformer
-  { id: "vaswani",  name: "Vaswani et al.", sub: "Transformer·8位作者", initials: "8×", color: "#8b5cf6", r: 28, group: "google",
-    bio: "2017年「Attention Is All You Need」8位Google作者：Vaswani、Shazeer、Parmar、Uszkoreit、Jones、Gomez、Kaiser、Polosukhin。论文发布后几乎全部离开Google自主创业。", tag: "Google Brain", x: cx + 300, y: cy + 20 },
-
-  // OpenAI
-  { id: "sam",      name: "Sam Altman", sub: "OpenAI CEO", initials: "SA", color: "#10b981", r: 32, group: "openai",
-    bio: "OpenAI CEO，前YC总裁。带领OpenAI推出ChatGPT，引爆全球AI浪潮。2023年曾短暂被董事会罢免，后复职。", tag: "OpenAI", x: cx + 200, y: cy + 200 },
-
-  // Events
-  { id: "ev1950",   name: "1950", sub: "图灵测试提出", initials: "◆", color: "#f97316", r: 20, group: "event", isEvent: true,
-    bio: "Alan Turing发表「Computing Machinery and Intelligence」，提出图灵测试，AI学科诞生。", x: cx + 100, y: cy - 290 },
-
-  { id: "ev2012",   name: "2012", sub: "ImageNet时刻", initials: "◆", color: "#f97316", r: 22, group: "event", isEvent: true,
-    bio: "AlexNet以超出第二名10%的准确率赢得ImageNet竞赛，深度学习革命正式引爆，掀起AI第三次浪潮。", x: cx + 100, y: cy + 160 },
-
-  { id: "ev2017",   name: "2017", sub: "Transformer诞生", initials: "◆", color: "#f97316", r: 22, group: "event", isEvent: true,
-    bio: "Google发布「Attention Is All You Need」，Transformer架构成为所有现代大模型（GPT、Claude、Gemini）的基础。", x: cx + 420, y: cy + 140 },
-
-  { id: "ev2022",   name: "2022", sub: "ChatGPT发布", initials: "◆", color: "#f97316", r: 24, group: "event", isEvent: true,
-    bio: "OpenAI发布ChatGPT，上线5天100万用户，2个月1亿用户，史上增长最快的消费产品，AI进入大众视野。", x: cx + 360, y: cy + 290 },
-];
-
-const links = [
-  // Turing → pioneers
-  { source: "turing", target: "hinton",  label: "理论基础", color: "#f59e0b" },
-  { source: "turing", target: "lecun",   label: "理论基础", color: "#f59e0b" },
-  { source: "turing", target: "bengio",  label: "理论基础", color: "#f59e0b" },
-  { source: "turing", target: "ev1950",  label: "", color: "#f97316" },
-
-  // Hinton → students
-  { source: "hinton", target: "alex",    label: "博士导师", color: "#3b82f6" },
-  { source: "hinton", target: "ilya",    label: "博士导师", color: "#3b82f6" },
-
-  // Feifei → event
-  { source: "feifei", target: "ev2012",  label: "创建ImageNet擂台", color: "#0ea5e9" },
-  { source: "alex",   target: "ev2012",  label: "AlexNet夺冠", color: "#3b82f6" },
-  { source: "ilya",   target: "ev2012",  label: "AlexNet三作者", color: "#3b82f6" },
-  { source: "hinton", target: "ev2012",  label: "", color: "#f59e0b" },
-
-  // Google → Transformer
-  { source: "vaswani", target: "ev2017", label: "发布论文", color: "#8b5cf6" },
-  { source: "bengio",  target: "vaswani",label: "注意力机制启发", color: "#8b5cf6" },
-
-  // OpenAI chain
-  { source: "ilya",   target: "sam",     label: "共同创立OpenAI", color: "#10b981" },
-  { source: "sam",    target: "ev2022",  label: "发布ChatGPT", color: "#10b981" },
-  { source: "ev2017", target: "ev2022",  label: "Transformer→GPT", color: "#f97316" },
-  { source: "ev2012", target: "ev2017",  label: "DL革命推动", color: "#f97316" },
-
-  // Three godfathers
-  { source: "hinton", target: "lecun",   label: "三巨头", color: "#f59e0b", dashed: true },
-  { source: "hinton", target: "bengio",  label: "三巨头", color: "#f59e0b", dashed: true },
-];
-
-// ─── SVG SETUP ─────────────────────────────────────────
-const svg = d3.select("#svg");
-const defs = svg.append("defs");
-
-// Glow filters
-["amber","blue","purple","green","cyan","orange"].forEach((name, i) => {
-  const colors = { amber:"#f59e0b", blue:"#3b82f6", purple:"#8b5cf6", green:"#10b981", cyan:"#0ea5e9", orange:"#f97316" };
-  const f = defs.append("filter").attr("id", `glow-${name}`).attr("x","-50%").attr("y","-50%").attr("width","200%").attr("height","200%");
-  f.append("feGaussianBlur").attr("stdDeviation","3").attr("result","blur");
-  const merge = f.append("feMerge");
-  merge.append("feMergeNode").attr("in","blur");
-  merge.append("feMergeNode").attr("in","SourceGraphic");
-});
-
-const container = svg.append("g").attr("transform", `translate(0, 60)`);
-
-// Zoom
-svg.call(d3.zoom().scaleExtent([0.3, 2.5]).on("zoom", (e) => {
-  container.attr("transform", `translate(${e.transform.x}, ${e.transform.y + 60}) scale(${e.transform.k})`);
-}));
-
-// ─── SIMULATION ────────────────────────────────────────
-const sim = d3.forceSimulation(nodes)
-  .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
-    if (d.source.group === "event" || d.target.group === "event") return 120;
-    return 160;
-  }).strength(0.3))
-  .force("charge", d3.forceManyBody().strength(-400))
-  .force("center", d3.forceCenter(cx, cy - 30))
-  .force("collide", d3.forceCollide(d => d.r + 30))
-  .alphaDecay(0.02);
-
-// Use fixed initial positions to guide layout
-nodes.forEach(n => { n.fx = n.x; n.fy = n.y; });
-setTimeout(() => { nodes.forEach(n => { delete n.fx; delete n.fy; }); sim.alpha(0.5).restart(); }, 800);
-
-// ─── LINKS ─────────────────────────────────────────────
-const linkGroup = container.append("g");
-
-const linkLines = linkGroup.selectAll("line").data(links).enter().append("line")
-  .attr("class", "link")
-  .attr("stroke", d => d.color || "#475569")
-  .attr("stroke-dasharray", d => d.dashed ? "4,3" : null);
-
-const linkLabels = linkGroup.selectAll(".link-label").data(links.filter(d => d.label)).enter()
-  .append("text").attr("class", "link-label").text(d => d.label);
-
-// ─── NODES ─────────────────────────────────────────────
-const nodeGroup = container.append("g");
-
-const nodeGroups = nodeGroup.selectAll(".node-group").data(nodes).enter()
-  .append("g").attr("class", "node-group")
-  .call(d3.drag()
-    .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-    .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
-    .on("end",   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
-  )
-  .on("mouseover", showTooltip)
-  .on("mousemove", moveTooltip)
-  .on("mouseout",  hideTooltip);
-
-// Outer glow ring
-nodeGroups.append("circle")
-  .attr("class", "node-ring")
-  .attr("r", d => d.r + 5)
-  .attr("stroke", d => d.color);
-
-// Background circle
-nodeGroups.append("circle")
-  .attr("class", "node-circle")
-  .attr("r", d => d.r)
-  .attr("fill", d => d.isEvent ? "rgba(249,115,22,0.15)" : `${d.color}22`)
-  .attr("stroke", d => d.color)
-  .attr("stroke-width", d => d.isEvent ? 2 : 1.5)
-  .attr("stroke-opacity", 0.7)
-  .attr("filter", d => {
-    const map = { "#f59e0b": "glow-amber", "#3b82f6": "glow-blue", "#8b5cf6": "glow-purple", "#10b981": "glow-green", "#0ea5e9": "glow-cyan", "#f97316": "glow-orange" };
-    return `url(#${map[d.color] || "glow-amber"})`;
+function switchTab(id, btn) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + id).classList.add('active');
+  btn.classList.add('active');
+  // re-trigger animations
+  const pane = document.getElementById('pane-' + id);
+  pane.querySelectorAll('.wk, .ts, .grad-block').forEach((el, i) => {
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = '';
   });
-
-// Event diamond overlay
-nodeGroups.filter(d => d.isEvent).append("rect")
-  .attr("x", d => -d.r * 0.65).attr("y", d => -d.r * 0.65)
-  .attr("width", d => d.r * 1.3).attr("height", d => d.r * 1.3)
-  .attr("fill", "none")
-  .attr("stroke", "#f97316")
-  .attr("stroke-width", 1.5)
-  .attr("stroke-opacity", 0.5)
-  .attr("transform", "rotate(45)");
-
-// Initials
-nodeGroups.filter(d => !d.isEvent).append("text")
-  .attr("class", "node-initials")
-  .attr("dy", -4)
-  .text(d => d.initials);
-
-// Event year
-nodeGroups.filter(d => d.isEvent).append("text")
-  .attr("class", "event-label")
-  .text(d => d.name);
-
-// Name label (below circle)
-nodeGroups.filter(d => !d.isEvent).append("text")
-  .attr("class", "node-name")
-  .attr("dy", d => d.r + 13)
-  .text(d => d.name.split(" ").slice(-1)[0] === d.name ? d.name : d.name);
-
-// Sub label
-nodeGroups.filter(d => !d.isEvent).append("text")
-  .attr("class", "node-sub")
-  .attr("dy", d => d.r + 24)
-  .text(d => d.sub);
-
-nodeGroups.filter(d => d.isEvent).append("text")
-  .attr("class", "event-sub")
-  .attr("dy", d => d.r + 14)
-  .text(d => d.sub);
-
-// ─── TICK ──────────────────────────────────────────────
-sim.on("tick", () => {
-  linkLines
-    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-
-  linkLabels
-    .attr("x", d => (d.source.x + d.target.x) / 2)
-    .attr("y", d => (d.source.y + d.target.y) / 2 - 4);
-
-  nodeGroups.attr("transform", d => `translate(${d.x}, ${d.y})`);
-});
-
-// ─── TOOLTIP ───────────────────────────────────────────
-const tt = document.getElementById("tooltip");
-
-function showTooltip(e, d) {
-  const tagColors = {
-    pioneer: "#f59e0b", student: "#3b82f6", google: "#8b5cf6",
-    openai: "#10b981", data: "#0ea5e9", event: "#f97316"
-  };
-  tt.innerHTML = `
-    <h3>${d.name}</h3>
-    <p>${d.bio}</p>
-    ${d.tag ? `<span class="tag" style="background:${tagColors[d.group]}22;color:${tagColors[d.group]};border:1px solid ${tagColors[d.group]}44">${d.tag}</span>` : ""}
-  `;
-  tt.style.opacity = 1;
-  moveTooltip(e);
 }
 
-function moveTooltip(e) {
-  const x = e.clientX + 16, y = e.clientY - 10;
-  tt.style.left = Math.min(x, window.innerWidth - 260) + "px";
-  tt.style.top  = Math.min(y, window.innerHeight - 160) + "px";
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn  = document.getElementById('themeBtn');
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  btn.textContent = isDark ? '☾ 暗色' : '☀ 亮色';
 }
-
-function hideTooltip() { tt.style.opacity = 0; }
-
-// ─── RESIZE ────────────────────────────────────────────
-window.addEventListener("resize", () => {
-  sim.force("center", d3.forceCenter(window.innerWidth/2, (window.innerHeight-60)/2));
-  sim.alpha(0.1).restart();
-});
 </script>
 </body>
 </html>
