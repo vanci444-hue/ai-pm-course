@@ -351,6 +351,14 @@ h1 .em { color: var(--accent); }
 .day-row:last-child { border-bottom: none; }
 .day-row:hover { background: var(--ghost); }
 
+.day-row-cont { border-top: none; }
+.day-row-cont .dc:first-child,
+.day-row-cont .dc:nth-child(2) {
+  border-right: none;
+  background: transparent;
+  visibility: hidden;
+}
+
 .dc {
   padding: 14px 16px;
   border-right: 1px solid var(--rule);
@@ -1006,48 +1014,21 @@ h1 .em { color: var(--accent); }
       <div class="day-row">
         <div class="dc"><span class="d-label">Day 5</span></div>
         <div class="dc"><span class="d-date">6-13</span><span class="d-dow">星期六</span></div>
-        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00</span></div>
+        <div class="dc dc-time"><span class="d-time">上午 10:00–12:00<br>下午 14:00–17:30</span></div>
         <div class="dc">
           <div class="sessions">
             <div class="session">
               <div class="s-title">本周作业点评</div>
               <div class="s-tags"><span class="stag">项目阶段性成果</span><span class="stag">代码与产品设计问题</span></div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="day-row">
-        <div class="dc"></div>
-        <div class="dc"></div>
-        <div class="dc dc-time"><span class="d-time">下午① 14:00–15:30</span></div>
-        <div class="dc">
-          <div class="sessions">
             <div class="session">
-              <div class="s-title">《AI产品上线与观测闭环》<span style="display:inline-block;margin-left:7px;padding:1px 6px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;vertical-align:middle;position:relative;top:-1px;">NEW</span></div>
+              <div class="s-title">《AI产品上线与观测闭环》</div>
               <div class="s-tags"><span class="stag">域名/服务器/云部署</span><span class="stag">Vercel快速上线</span><span class="stag">GA埋点与核心事件</span><span class="stag">Sentry错误监控</span><span class="stag">迭代决策闭环</span><span class="stag">灰度发布与A/B test</span></div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="day-row">
-        <div class="dc"></div>
-        <div class="dc"></div>
-        <div class="dc dc-time"><span class="d-time">下午② 15:45–17:15</span></div>
-        <div class="dc">
-          <div class="sessions">
             <div class="session">
-              <div class="s-title">《AI产品安全基础｜PM必懂的安全边界》<span style="display:inline-block;margin-left:7px;padding:1px 6px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;vertical-align:middle;position:relative;top:-1px;">NEW</span></div>
+              <div class="s-title">《AI产品安全基础｜PM必懂的安全边界》</div>
               <div class="s-tags"><span class="stag">Prompt Injection攻防</span><span class="stag">数据泄露风险</span><span class="stag">OWASP LLM Top 10</span><span class="stag">安全Checklist</span></div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div class="day-row">
-        <div class="dc"></div>
-        <div class="dc"></div>
-        <div class="dc dc-time"><span class="d-time">下午③ 17:15–17:30</span></div>
-        <div class="dc">
-          <div class="sessions">
             <div class="session">
               <div class="s-title">《AI产品评估框架》</div>
               <div class="s-tags"><span class="stag">线上评估指标体系</span><span class="stag">效果 vs 成本 vs 体验</span></div>
