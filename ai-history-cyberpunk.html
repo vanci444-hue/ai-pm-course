@@ -1,0 +1,1200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>A·I // 70Y — A Cyberpunk Codex of Artificial Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Big+Shoulders+Display:wght@400;700;900&family=Space+Mono:wght@400;700&family=Rajdhani:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<style>
+:root{
+  /* base */
+  --ink-0:#04040a;
+  --ink-1:#08080f;
+  --ink-2:#0c0c18;
+  --ink-3:#11121f;
+  --ink-4:#171828;
+  --rule:#1d1e34;
+  --rule-hi:#2a2c4d;
+
+  /* type */
+  --paper:#eef0ff;
+  --paper-dim:#a5a9c8;
+  --paper-mute:#62668a;
+  --paper-deep:#3a3d5a;
+
+  /* accents — used sparingly */
+  --mag:#ff2bd6;
+  --cyan:#52f3ff;
+  --amber:#ffb300;
+  --acid:#c6ff3d;
+  --rose:#ff527a;
+  --violet:#b07bff;
+
+  /* era palette — refined */
+  --e1:#ff2bd6;   /* 符号主义  magenta */
+  --e2:#52f3ff;   /* 统计学习  cyan    */
+  --e3:#c6ff3d;   /* 深度学习  acid    */
+  --e4:#ffb300;   /* Transformer amber */
+  --e5:#b07bff;   /* 大模型    violet  */
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--ink-0);color:var(--paper);height:100%;overflow:hidden;
+  font-family:"Rajdhani","Noto Sans SC",-apple-system,sans-serif;font-weight:400;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+
+/* ============================================================
+   ATMOSPHERIC BACKDROP — layered, restrained, architectural
+   ============================================================ */
+.atmos{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.atmos .gradient{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(1100px 700px at 8% -8%, rgba(255,43,214,.10), transparent 55%),
+    radial-gradient(900px 600px at 100% 105%, rgba(82,243,255,.07), transparent 55%),
+    radial-gradient(700px 500px at 50% 50%, rgba(176,123,255,.04), transparent 70%),
+    linear-gradient(180deg,#04040a 0%,#07070f 50%,#0a0918 100%);
+}
+.atmos .grid{
+  position:absolute;inset:-2px;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size:64px 64px,64px 64px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 92%);
+}
+.atmos .fine{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(82,243,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82,243,255,.03) 1px, transparent 1px);
+  background-size:16px 16px,16px 16px;
+  mask-image:radial-gradient(ellipse 60% 50% at 50% 50%, black 0%, transparent 70%);
+  opacity:.55;
+}
+.atmos .scan{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(180deg, rgba(255,255,255,.018) 0 1px, transparent 1px 3px);
+  mix-blend-mode:overlay;
+}
+.atmos .vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 90% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+.atmos .noise{
+  position:absolute;inset:0;opacity:.06;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.app{position:relative;z-index:2;display:grid;grid-template-rows:auto auto 1fr auto;height:100vh;min-height:0}
+
+/* Diagonal accent sweep behind header */
+.shell-accent{
+  position:absolute;left:0;right:0;top:0;height:240px;z-index:-1;pointer-events:none;overflow:hidden;
+}
+.shell-accent::before{
+  content:"";position:absolute;left:-10%;right:-10%;top:30px;height:1px;
+  background:linear-gradient(90deg, transparent, var(--mag) 12%, var(--cyan) 48%, var(--amber) 78%, transparent);
+  opacity:.5;transform:rotate(-1.4deg);transform-origin:left;
+}
+.shell-accent::after{
+  content:"";position:absolute;left:-20%;right:0;top:80px;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  transform:rotate(-1.4deg);transform-origin:left;
+}
+
+/* SVG corner brackets — sharper, more architectural */
+.corner{position:absolute;width:30px;height:30px;z-index:6;pointer-events:none;color:var(--cyan);opacity:.55}
+.corner.tl{top:10px;left:10px}
+.corner.tr{top:10px;right:10px;transform:scaleX(-1)}
+.corner.bl{bottom:10px;left:10px;transform:scaleY(-1)}
+.corner.br{bottom:10px;right:10px;transform:scale(-1,-1)}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.head{
+  position:relative;display:grid;
+  grid-template-columns:minmax(280px,1.05fr) minmax(440px,1.4fr) minmax(320px,1.05fr);
+  align-items:start;gap:28px;padding:22px 36px 18px;
+  border-bottom:1px solid var(--rule);
+}
+.head::after{
+  content:"";position:absolute;left:36px;right:36px;bottom:-1px;height:1px;
+  background:linear-gradient(90deg, transparent, var(--mag) 18%, var(--cyan) 82%, transparent);
+  opacity:.65;
+}
+
+/* — brand */
+.brand{display:flex;flex-direction:column;gap:6px;position:relative}
+.brand .codeline{
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.32em;color:var(--paper-mute);
+  text-transform:uppercase;display:flex;align-items:center;gap:8px;
+}
+.brand .codeline .dot{width:5px;height:5px;background:var(--acid);border-radius:50%;box-shadow:0 0 8px var(--acid);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+.brand .codeline b{color:var(--paper);letter-spacing:.32em;font-weight:700}
+.brand .logo{
+  font-family:"Syne",sans-serif;font-weight:800;font-size:30px;letter-spacing:-.02em;line-height:1;
+  color:var(--paper);margin-top:2px;display:flex;align-items:baseline;gap:8px;
+}
+.brand .logo .slash{color:var(--mag);font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:34px;line-height:1;transform:translateY(2px)}
+.brand .logo .y{color:var(--cyan)}
+.brand .glitch{position:relative;display:inline-block}
+.brand .glitch::before,.brand .glitch::after{
+  content:attr(data-text);position:absolute;left:0;top:0;width:100%;
+  clip-path:inset(0 0 50% 0);
+}
+.brand .glitch::before{color:var(--mag);transform:translate(.5px,0);animation:gl 6s infinite steps(1)}
+.brand .glitch::after {color:var(--cyan);transform:translate(-.5px,0);clip-path:inset(50% 0 0 0);animation:gl 5.2s infinite steps(1) reverse}
+@keyframes gl{
+  0%,94%,100%{transform:translate(0,0)}
+  95%{transform:translate(-1.5px,0)}
+  96%{transform:translate(1.5px,0)}
+  97%{transform:translate(0,1px)}
+}
+.brand .tagline{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--paper-dim);font-style:italic;letter-spacing:.02em;margin-top:4px;line-height:1.4}
+.brand .tagline .num{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-style:normal;color:var(--paper);font-size:15px;letter-spacing:.04em;margin-right:2px}
+
+/* — doctrine center quote */
+.doctrine{
+  position:relative;padding:14px 18px 14px 22px;
+  background:linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,0));
+  border:1px solid var(--rule);
+}
+.doctrine::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--mag),var(--cyan),var(--amber));
+}
+.doctrine .hdr{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.3em;color:var(--paper-mute);
+  text-transform:uppercase;margin-bottom:8px;
+}
+.doctrine .hdr .id{color:var(--cyan)}
+.doctrine .text{font-size:14px;line-height:1.55;color:var(--paper);font-weight:500}
+.doctrine .text .k{color:var(--mag);font-weight:700}
+.doctrine .text .c{color:var(--cyan);font-weight:700}
+.doctrine .text .y{color:var(--amber);font-weight:700}
+.doctrine .text .arrow{color:var(--paper-mute);margin:0 4px;font-family:"Space Mono",monospace}
+.doctrine .keys{
+  margin-top:8px;display:flex;gap:12px;
+  font-family:"Big Shoulders Display",sans-serif;font-weight:900;letter-spacing:.04em;
+  font-size:13px;
+}
+.doctrine .keys span{display:inline-flex;align-items:baseline;gap:4px}
+.doctrine .keys i{font-style:normal;font-family:"Space Mono",monospace;font-size:9px;font-weight:400;letter-spacing:.2em;color:var(--paper-mute)}
+.doctrine .keys .a{color:var(--mag)}
+.doctrine .keys .b{color:var(--cyan)}
+.doctrine .keys .c{color:var(--amber)}
+
+/* — view tabs */
+.tabs{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.tabs .row{display:flex;gap:0;border:1px solid var(--rule);background:rgba(255,255,255,.012)}
+.tab{
+  font-family:"Big Shoulders Display",sans-serif;font-weight:700;letter-spacing:.16em;font-size:12px;
+  padding:10px 18px;color:var(--paper-dim);background:transparent;
+  border:none;border-right:1px solid var(--rule);cursor:pointer;
+  transition:all .2s ease;text-transform:uppercase;position:relative;
+  display:flex;align-items:center;gap:8px;
+}
+.tab:last-child{border-right:none}
+.tab .num{font-family:"Space Mono",monospace;font-size:9px;color:var(--paper-mute);letter-spacing:.2em}
+.tab:hover{color:var(--paper);background:rgba(82,243,255,.04)}
+.tab.active{color:var(--ink-0);background:var(--paper);font-weight:900}
+.tab.active .num{color:var(--ink-0);opacity:.55}
+.tab.active::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--mag);
+  box-shadow:0 0 8px var(--mag);
+}
+.tabs .telemetry{
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.22em;color:var(--paper-mute);
+  display:flex;gap:14px;align-items:center;text-transform:uppercase;
+}
+.tabs .telemetry .sig{display:inline-flex;gap:2px;align-items:flex-end}
+.tabs .telemetry .sig i{display:block;width:3px;background:var(--acid);opacity:.5}
+.tabs .telemetry .sig i:nth-child(1){height:5px}
+.tabs .telemetry .sig i:nth-child(2){height:8px;opacity:.7}
+.tabs .telemetry .sig i:nth-child(3){height:11px;opacity:.9}
+.tabs .telemetry .sig i:nth-child(4){height:14px}
+
+/* ============================================================
+   FILTER RAIL
+   ============================================================ */
+.rail{
+  display:flex;gap:22px;align-items:center;flex-wrap:wrap;
+  padding:12px 36px;background:rgba(8,8,15,.55);
+  border-bottom:1px solid var(--rule);position:relative;z-index:5;
+}
+.rail .seg{display:flex;align-items:center;gap:10px;position:relative}
+.rail .seg + .seg::before{
+  content:"";position:absolute;left:-12px;top:50%;width:1px;height:18px;background:var(--rule);transform:translateY(-50%);
+}
+.rail .label{
+  font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.28em;color:var(--paper-mute);
+  text-transform:uppercase;display:flex;align-items:center;gap:5px;
+}
+.rail .label::before{content:"";width:14px;height:1px;background:currentColor;opacity:.5}
+.chip{
+  font-family:"Rajdhani",sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.05em;
+  padding:5px 11px;border:1px solid var(--rule);color:var(--paper-dim);
+  background:transparent;cursor:pointer;transition:.16s;user-select:none;
+  position:relative;
+}
+.chip:hover{color:var(--paper);border-color:var(--rule-hi);background:rgba(255,255,255,.02)}
+.chip.on{color:var(--ink-0);font-weight:700;border-color:transparent}
+.chip.era-1.on{background:var(--e1)}
+.chip.era-2.on{background:var(--e2)}
+.chip.era-3.on{background:var(--e3)}
+.chip.era-4.on{background:var(--e4)}
+.chip.era-5.on{background:var(--e5)}
+.chip.type.on{background:var(--paper)}
+.chip.evt.on{background:var(--cyan)}
+.chip.country.on{background:var(--paper);color:var(--ink-0)}
+
+.search{
+  margin-left:auto;display:flex;align-items:center;gap:10px;
+  border:1px solid var(--rule);padding:6px 12px;background:rgba(255,255,255,.015);
+  min-width:240px;
+}
+.search:focus-within{border-color:var(--cyan)}
+.search .ic{color:var(--paper-mute);font-family:"Space Mono",monospace;font-size:11px}
+.search input{
+  background:transparent;border:none;outline:none;color:var(--paper);flex:1;
+  font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.05em;
+}
+.search input::placeholder{color:var(--paper-deep)}
+.search .hint{font-family:"Space Mono",monospace;font-size:9px;color:var(--paper-mute);letter-spacing:.2em;
+  border:1px solid var(--rule);padding:1px 5px}
+
+/* ============================================================
+   STAGE
+   ============================================================ */
+.stage{position:relative;overflow:hidden;min-height:0}
+.view{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.view.active{opacity:1;pointer-events:auto}
+
+/* — vertical side label (decorative) */
+.side-label{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.4em;color:var(--paper-deep);
+  white-space:nowrap;text-transform:uppercase;z-index:3;pointer-events:none;
+}
+.side-label-r{
+  position:absolute;right:-14px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:right center;
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.4em;color:var(--paper-deep);
+  white-space:nowrap;text-transform:uppercase;z-index:3;pointer-events:none;
+}
+
+/* ============================================================
+   NETWORK VIEW
+   ============================================================ */
+#network{position:absolute;inset:0}
+
+.panel{
+  position:absolute;background:rgba(8,8,15,.82);backdrop-filter:blur(14px);
+  border:1px solid var(--rule);z-index:4;
+}
+.panel::before{
+  /* small corner marker */
+  content:"";position:absolute;top:-1px;left:-1px;width:14px;height:14px;
+  border-top:1px solid var(--cyan);border-left:1px solid var(--cyan);
+}
+.panel::after{
+  content:"";position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;
+  border-bottom:1px solid var(--mag);border-right:1px solid var(--mag);
+}
+
+.legend{left:24px;top:24px;padding:16px 18px;width:260px}
+.legend .ttl{
+  font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.3em;
+  color:var(--paper-mute);margin:0 0 12px;text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.legend .ttl span{color:var(--cyan)}
+.legend .row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13px;color:var(--paper-dim)}
+.legend .row b{color:var(--paper);font-weight:600;font-family:"Rajdhani",sans-serif;flex:1}
+.legend .row .meta{font-family:"Space Mono",monospace;font-size:9.5px;color:var(--paper-mute);letter-spacing:.15em}
+.shape{width:18px;height:18px;flex:0 0 18px;display:inline-block;position:relative}
+.shape.hex{background:var(--cyan);clip-path:polygon(25% 4%,75% 4%,98% 50%,75% 96%,25% 96%,2% 50%)}
+.shape.cap{width:24px;height:11px;background:linear-gradient(90deg,var(--mag),var(--violet));border-radius:6px}
+.shape.circ{background:var(--amber);border-radius:50%}
+.shape.dia{background:var(--acid);transform:rotate(45deg)}
+.legend .foot{
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);
+  font-family:"Space Mono",monospace;font-size:10px;color:var(--paper-mute);letter-spacing:.1em;
+  display:flex;justify-content:space-between;
+}
+.legend .foot kbd{
+  font-family:"Space Mono",monospace;font-size:9px;
+  padding:1px 5px;border:1px solid var(--rule);color:var(--paper-dim);background:rgba(255,255,255,.02);
+}
+
+/* mini-stats card under legend */
+.statcard{
+  left:24px;bottom:24px;padding:14px 18px;width:260px;
+}
+.statcard .ttl{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.3em;color:var(--paper-mute);text-transform:uppercase;margin-bottom:10px}
+.statcard .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.statcard .cell{padding:8px 0;border-top:1px solid var(--rule)}
+.statcard .cell .v{font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:24px;line-height:1;color:var(--paper)}
+.statcard .cell .l{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.2em;color:var(--paper-mute);text-transform:uppercase;margin-top:4px}
+.statcard .cell.acc .v{color:var(--cyan)}
+
+/* detail */
+.detail{
+  right:24px;top:24px;width:340px;max-height:calc(100% - 48px);overflow:auto;padding:18px;
+  transform:translateX(24px);opacity:0;pointer-events:none;transition:.32s cubic-bezier(.2,.7,.2,1);
+}
+.detail.show{transform:none;opacity:1;pointer-events:auto}
+.detail .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.detail .tag{
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.28em;color:var(--cyan);
+  text-transform:uppercase;display:flex;align-items:center;gap:8px;
+}
+.detail .tag::before{content:"";width:6px;height:6px;background:currentColor;display:inline-block}
+.detail .close{
+  cursor:pointer;color:var(--paper-mute);font-family:"Space Mono",monospace;font-size:12px;
+  background:none;border:1px solid var(--rule);padding:2px 8px;letter-spacing:.1em;
+}
+.detail .close:hover{color:var(--paper);border-color:var(--paper-dim)}
+.detail h3{margin:6px 0 2px;font-family:"Syne",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.01em;color:var(--paper);line-height:1.1}
+.detail .cn{font-family:"Noto Serif SC",serif;font-weight:400;color:var(--paper-dim);font-size:14px;margin-bottom:10px}
+.detail .meta{
+  display:flex;gap:14px;font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.06em;
+  color:var(--paper-mute);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--rule);
+}
+.detail .meta b{color:var(--paper);font-weight:700}
+.detail .meta .pill{padding:2px 7px;border:1px solid currentColor;color:var(--cyan)}
+.detail .desc{font-size:14px;line-height:1.6;color:var(--paper)}
+.detail .desc::first-letter{font-family:"Syne",serif;font-size:30px;font-weight:800;float:left;line-height:.85;margin:4px 8px 0 0;color:var(--mag)}
+.detail .rels{margin-top:14px;padding-top:12px;border-top:1px solid var(--rule)}
+.detail .rels h5{margin:0 0 8px;font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.25em;color:var(--paper-mute);text-transform:uppercase}
+.detail .rels span{
+  display:inline-block;padding:3px 9px;margin:3px 4px 0 0;font-size:12px;color:var(--paper-dim);
+  border:1px solid var(--rule);cursor:pointer;transition:.15s;font-family:"Rajdhani",sans-serif;font-weight:500;
+}
+.detail .rels span:hover{color:var(--cyan);border-color:var(--cyan)}
+
+/* tooltip */
+.vis-tooltip{
+  background:rgba(8,8,15,.95)!important;border:1px solid var(--cyan)!important;
+  color:var(--paper)!important;font-family:"Rajdhani",sans-serif!important;font-size:13px!important;
+  padding:10px 14px!important;border-radius:0!important;
+  box-shadow:0 8px 32px rgba(0,0,0,.6)!important;max-width:280px!important;
+}
+
+/* ============================================================
+   TIMELINE VIEW
+   ============================================================ */
+.tl-wrap{position:absolute;inset:0;overflow:auto;padding:30px 36px 24px}
+.tl-axis{
+  position:relative;height:54px;margin-bottom:16px;
+  border-bottom:1px solid var(--rule);
+}
+.tl-axis::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,var(--mag),var(--cyan),var(--acid),var(--amber),var(--violet));opacity:.6;
+}
+.tl-axis .tick{position:absolute;bottom:0;width:1px;background:var(--rule-hi);height:7px}
+.tl-axis .tick.major{height:14px;background:var(--paper-dim)}
+.tl-axis .tick span{position:absolute;bottom:-22px;transform:translateX(-50%);
+  font-family:"Space Mono",monospace;font-size:10px;color:var(--paper-mute);letter-spacing:.1em}
+.tl-axis .era-band{position:absolute;bottom:14px;height:6px;border-top:1px solid currentColor}
+.tl-axis .era-band span{position:absolute;left:6px;top:-22px;font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:11px;letter-spacing:.18em;color:currentColor;text-transform:uppercase}
+
+.timeline{
+  position:relative;display:grid;
+  grid-template-columns:repeat(5, minmax(330px, 1fr));
+  gap:18px;min-width:1740px;
+}
+.era{
+  position:relative;padding:20px 18px 22px;
+  background:linear-gradient(180deg, rgba(255,255,255,.025) 0%, rgba(255,255,255,.005) 60%, transparent 100%);
+  border:1px solid var(--rule);
+  min-height:600px;transition:.3s;
+}
+.era::before{
+  content:"";position:absolute;left:-1px;top:-1px;right:-1px;height:2px;background:var(--era);
+}
+.era::after{
+  content:"";position:absolute;left:-1px;top:-1px;width:2px;height:60px;background:var(--era);
+}
+.era.dim{opacity:.22;filter:saturate(.4)}
+
+.era .stamp{
+  display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;
+}
+.era .stamp .L{display:flex;flex-direction:column}
+.era .num{
+  font-family:"Big Shoulders Display",sans-serif;font-weight:900;font-size:64px;line-height:.85;
+  color:transparent;-webkit-text-stroke:1.5px var(--era);letter-spacing:-.02em;
+}
+.era .stamp .R{
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.22em;color:var(--paper-mute);
+  text-transform:uppercase;text-align:right;line-height:1.6;
+}
+.era .stamp .R b{color:var(--era);font-weight:700}
+.era .yr{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.22em;color:var(--era);margin-top:4px}
+.era .name{
+  font-family:"Syne",sans-serif;font-weight:800;font-size:24px;color:var(--paper);margin-top:6px;letter-spacing:-.01em;
+  display:flex;align-items:baseline;gap:8px;line-height:1.05;
+}
+.era .name .en{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:13px;letter-spacing:.18em;color:var(--era);text-transform:uppercase}
+.era .idea{
+  font-family:"Noto Serif SC",serif;font-size:13.5px;line-height:1.6;color:var(--paper-dim);margin-top:10px;
+  padding:10px 12px;background:rgba(255,255,255,.018);border-left:2px solid var(--era);font-style:italic;
+}
+
+.era .sec{margin-top:18px}
+.era .sec-hd{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.26em;color:var(--era);
+  text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--rule);
+}
+.era .sec-hd .cnt{color:var(--paper-mute);font-size:9.5px}
+
+.event{
+  position:relative;padding:8px 10px 8px 26px;margin-bottom:6px;
+  font-size:13.5px;color:var(--paper);background:rgba(255,255,255,.012);
+  cursor:pointer;transition:.18s;line-height:1.35;
+  border:1px solid transparent;
+}
+.event::before{
+  content:"";position:absolute;left:10px;top:14px;width:6px;height:6px;
+  background:var(--era);
+}
+.event:hover{background:rgba(255,255,255,.04);border-color:var(--era);transform:translateX(2px)}
+.event .yr{font-family:"Space Mono",monospace;font-size:10.5px;color:var(--paper-mute);margin-right:8px;letter-spacing:.05em;font-weight:700}
+.event .tt{font-family:"Rajdhani",sans-serif;font-weight:600}
+.event[data-type="winter"]::before{background:var(--rose);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.event[data-type="conference"]::before{background:var(--acid);border-radius:50%}
+.event[data-type="paper"]::before{background:var(--cyan)}
+.event[data-type="competition"]::before{background:var(--mag);transform:rotate(45deg)}
+.event[data-type="product"]::before{background:var(--amber)}
+
+.people{display:flex;flex-wrap:wrap;gap:5px 5px}
+.people .p{
+  font-family:"Rajdhani",sans-serif;font-weight:500;font-size:12.5px;letter-spacing:.03em;
+  padding:4px 9px;border:1px solid var(--rule);color:var(--paper);
+  background:rgba(255,255,255,.015);cursor:pointer;transition:.15s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.people .p::before{content:"";width:5px;height:5px;background:var(--era);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.people .p:hover{color:var(--era);border-color:var(--era);background:rgba(255,255,255,.04)}
+
+.era.e1{--era:var(--e1)}
+.era.e2{--era:var(--e2)}
+.era.e3{--era:var(--e3)}
+.era.e4{--era:var(--e4)}
+.era.e5{--era:var(--e5)}
+
+/* ============================================================
+   FOOTER STATUS BAR
+   ============================================================ */
+.foot{
+  display:flex;gap:24px;align-items:center;
+  padding:8px 36px;border-top:1px solid var(--rule);
+  background:rgba(4,4,10,.7);
+  font-family:"Space Mono",monospace;font-size:10.5px;color:var(--paper-mute);letter-spacing:.18em;
+  text-transform:uppercase;position:relative;
+}
+.foot::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg, transparent, var(--cyan) 30%, var(--mag) 70%, transparent);opacity:.3;
+}
+.foot .live{color:var(--acid);display:inline-flex;align-items:center;gap:6px}
+.foot .live::before{content:"";width:6px;height:6px;background:var(--acid);border-radius:50%;box-shadow:0 0 8px var(--acid);animation:blink 1.4s infinite}
+.foot .sep{color:var(--paper-deep)}
+.foot .stat{display:inline-flex;align-items:baseline;gap:6px}
+.foot .stat b{color:var(--paper);font-weight:700;letter-spacing:.08em;font-size:11.5px}
+.foot .right{margin-left:auto;display:flex;gap:18px;align-items:center}
+.foot .ticker{
+  overflow:hidden;width:280px;position:relative;
+  border-left:1px solid var(--rule);border-right:1px solid var(--rule);padding:2px 0;
+  -webkit-mask-image:linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+}
+.foot .ticker .track{display:inline-block;white-space:nowrap;padding-left:100%;animation:ticker 28s linear infinite}
+.foot .ticker .track i{font-style:normal;margin:0 18px;color:var(--paper-dim)}
+.foot .ticker .track i b{color:var(--cyan);font-weight:700;margin-right:6px}
+@keyframes ticker{from{transform:translateX(0)} to{transform:translateX(-100%)}}
+
+/* ============================================================
+   SCROLLBARS
+   ============================================================ */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--ink-1)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--mag),var(--cyan))}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--cyan),var(--mag))}
+
+@media (max-width:1280px){
+  .head{grid-template-columns:1fr;gap:16px;padding:18px 24px}
+  .tabs{align-items:flex-start}
+  .timeline{grid-template-columns:repeat(5, 330px)}
+  .rail{padding:12px 24px}
+}
+</style>
+</head>
+<body>
+<div class="atmos">
+  <div class="gradient"></div>
+  <div class="grid"></div>
+  <div class="fine"></div>
+  <div class="scan"></div>
+  <div class="vignette"></div>
+  <div class="noise"></div>
+</div>
+
+<!-- decorative corner brackets (purely visual, never blocking clicks) -->
+<svg class="corner tl" viewBox="0 0 30 30"><path d="M0 12V0h12" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="0" cy="0" r="1.5" fill="currentColor"/></svg>
+<svg class="corner tr" viewBox="0 0 30 30"><path d="M0 12V0h12" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="0" cy="0" r="1.5" fill="currentColor"/></svg>
+<svg class="corner bl" viewBox="0 0 30 30"><path d="M0 12V0h12" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="0" cy="0" r="1.5" fill="currentColor"/></svg>
+<svg class="corner br" viewBox="0 0 30 30"><path d="M0 12V0h12" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="0" cy="0" r="1.5" fill="currentColor"/></svg>
+
+<div class="app">
+  <div class="shell-accent"></div>
+
+  <!-- ============ HEADER ============ -->
+  <header class="head">
+    <div class="brand">
+      <div class="codeline"><span class="dot"></span><b>CODEX</b> · 0xA1B7 · CLASSIFIED // EDU</div>
+      <div class="logo">
+        <span class="glitch" data-text="A·I">A·I</span>
+        <span class="slash">//</span>
+        <span class="y glitch" data-text="70Y">70Y</span>
+      </div>
+      <div class="tagline">
+        <span class="num">70</span>年人工智能简史 ·
+        <span class="num">5</span>个时期 ·
+        <span class="num">22</span>位关键人物 ·
+        <span class="num">28</span>项里程碑成果
+      </div>
+    </div>
+
+    <div class="doctrine">
+      <div class="hdr"><span>// CORE DOCTRINE</span><span class="id">REF · 70Y.MAIN</span></div>
+      <div class="text">
+        <span class="k">让机器懂规则</span><span class="arrow">→</span>
+        <span class="c">让机器学数据</span><span class="arrow">→</span>
+        <span class="y">让机器自己学一切</span>
+      </div>
+      <div class="keys">
+        <span><i>K01</i><b class="a">数据</b></span>
+        <span><i>K02</i><b class="b">算力</b></span>
+        <span><i>K03</i><b class="c">架构</b></span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="row">
+        <button class="tab active" data-view="network"><span class="num">01</span>网状图谱</button>
+        <button class="tab" data-view="timeline"><span class="num">02</span>时间轴</button>
+      </div>
+      <div class="telemetry">
+        <span>SIGNAL</span>
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span>·</span><span id="clock">--:--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ FILTER RAIL ============ -->
+  <div class="rail">
+    <div class="seg">
+      <span class="label">ERA</span>
+      <span class="chip era-1 on" data-era="1">符号主义</span>
+      <span class="chip era-2 on" data-era="2">统计学习</span>
+      <span class="chip era-3 on" data-era="3">深度学习</span>
+      <span class="chip era-4 on" data-era="4">Transformer</span>
+      <span class="chip era-5 on" data-era="5">大模型</span>
+    </div>
+    <div class="seg">
+      <span class="label">KIND</span>
+      <span class="chip type on" data-type="person">人物</span>
+      <span class="chip type on" data-type="achievement">成果</span>
+      <span class="chip type on" data-type="event">事件</span>
+    </div>
+    <div class="seg">
+      <span class="label">EVENT</span>
+      <span class="chip evt on" data-event="paper">论文</span>
+      <span class="chip evt on" data-event="product">产品</span>
+      <span class="chip evt on" data-event="competition">竞赛</span>
+      <span class="chip evt on" data-event="winter">寒冬</span>
+      <span class="chip evt on" data-event="conference">会议</span>
+    </div>
+    <div class="seg">
+      <span class="label">REGION</span>
+      <span class="chip country on" data-country="US">US</span>
+      <span class="chip country on" data-country="UK">UK</span>
+      <span class="chip country on" data-country="CN">CN</span>
+      <span class="chip country on" data-country="CA">CA</span>
+      <span class="chip country on" data-country="JP">JP</span>
+      <span class="chip country on" data-country="FR">FR</span>
+    </div>
+    <label class="search">
+      <span class="ic">⌕</span>
+      <input id="q" placeholder="SEARCH · hinton / GPT / 1956 / transformer ..." />
+      <span class="hint">/</span>
+    </label>
+  </div>
+
+  <!-- ============ STAGE ============ -->
+  <main class="stage">
+    <div class="side-label">NODE_GRAPH · v1.0 · INTERACTIVE</div>
+    <div class="side-label-r">EVAN · AIPM_COURSE_01 · 2026</div>
+
+    <!-- ===== NETWORK VIEW ===== -->
+    <section class="view active" id="view-network">
+      <div id="network"></div>
+
+      <aside class="panel legend">
+        <div class="ttl"><span>// NODE TAXONOMY</span><span>04 TYPES</span></div>
+        <div class="row"><span class="shape hex"></span><b>人物</b><span class="meta">HEX · 22</span></div>
+        <div class="row"><span class="shape cap"></span><b>时期</b><span class="meta">CAP · 05</span></div>
+        <div class="row"><span class="shape circ"></span><b>成果</b><span class="meta">DOT · 28</span></div>
+        <div class="row"><span class="shape dia"></span><b>事件</b><span class="meta">DIA · 23</span></div>
+        <div class="foot">
+          <span>DRAG · ZOOM · CLICK</span>
+          <kbd>↩</kbd>
+        </div>
+      </aside>
+
+      <aside class="panel statcard">
+        <div class="ttl">// LIVE STATS</div>
+        <div class="grid">
+          <div class="cell"><div class="v" id="s-node">0</div><div class="l">NODES VISIBLE</div></div>
+          <div class="cell acc"><div class="v" id="s-edge">0</div><div class="l">EDGES VISIBLE</div></div>
+          <div class="cell"><div class="v" id="s-era">5</div><div class="l">ERAS ACTIVE</div></div>
+          <div class="cell"><div class="v" id="s-year">75</div><div class="l">YEARS SPAN</div></div>
+        </div>
+      </aside>
+
+      <aside class="panel detail" id="detail">
+        <div class="head">
+          <span class="tag" id="d-tag">NODE</span>
+          <button class="close" id="d-close">CLOSE ✕</button>
+        </div>
+        <h3 id="d-title"></h3>
+        <div class="cn" id="d-cn"></div>
+        <div class="meta" id="d-meta"></div>
+        <div class="desc" id="d-desc"></div>
+        <div class="rels" id="d-rels"></div>
+      </aside>
+    </section>
+
+    <!-- ===== TIMELINE VIEW ===== -->
+    <section class="view" id="view-timeline">
+      <div class="tl-wrap">
+        <div class="tl-axis" id="axis"></div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="foot">
+    <span class="live">SYS · ATLAS.RT</span>
+    <span class="sep">│</span>
+    <span class="stat">ERAS<b id="f-era">5</b></span>
+    <span class="sep">│</span>
+    <span class="stat">NODES<b id="f-node">0</b></span>
+    <span class="sep">│</span>
+    <span class="stat">EDGES<b id="f-edge">0</b></span>
+    <span class="sep">│</span>
+    <span class="stat">SPAN<b>1950—2025</b></span>
+    <span class="ticker">
+      <span class="track">
+        <i><b>1950</b>图灵测试提出</i>
+        <i><b>1956</b>达特茅斯会议 / AI 诞生</i>
+        <i><b>1974</b>第一次寒冬</i>
+        <i><b>1997</b>深蓝胜卡斯帕罗夫</i>
+        <i><b>2006</b>DBN / 深度学习命名</i>
+        <i><b>2012</b>AlexNet 碾压 ImageNet</i>
+        <i><b>2016</b>AlphaGo 击败李世石</i>
+        <i><b>2017</b>Attention is All You Need</i>
+        <i><b>2020</b>GPT-3 发布 · 涌现验证</i>
+        <i><b>2022</b>ChatGPT · 5 天破百万</i>
+        <i><b>2024</b>DeepSeek-V3 / o1 推理</i>
+        <i><b>2025</b>推理模型成主流</i>
+      </span>
+    </span>
+    <span class="right">
+      <span>BUILD 70Y.0.1.0</span>
+    </span>
+  </footer>
+</div>
+
+<script>
+/* =================================================================
+   DATA
+   ================================================================= */
+const ERAS = [
+  {id:"E1",num:"01",name:"符号主义",accent:"Symbolic AI",yr:"1950s — 1980s",span:[1950,1989],color:"#ff2bd6",
+   idea:"把人类知识翻译成 if-else 规则，让机器像逻辑学家一样推理。"},
+  {id:"E2",num:"02",name:"统计学习",accent:"Statistical Learning",yr:"1990s — 2005",span:[1990,2005],color:"#52f3ff",
+   idea:"不让人写规则，让机器从数据里学统计规律——核方法、集成、概率图。"},
+  {id:"E3",num:"03",name:"深度学习",accent:"Deep Learning",yr:"2006 — 2017",span:[2006,2017],color:"#c6ff3d",
+   idea:"神经网络自动学特征，端到端解决问题。GPU + 大数据点燃第三次浪潮。"},
+  {id:"E4",num:"04",name:"Transformer 时代",accent:"Attention Era",yr:"2017 — 2020",span:[2017,2020],color:"#ffb300",
+   idea:"Attention 取代 RNN，并行处理长序列；预训练 + 微调成为范式。"},
+  {id:"E5",num:"05",name:"大模型时代",accent:"Foundation Models",yr:"2020 — Now",span:[2020,2025],color:"#b07bff",
+   idea:"规模化 + 通用化——一个基础模型，几乎能干所有语言/多模态任务。"},
+];
+
+const PEOPLE = [
+  {id:"P-turing",   name:"Alan Turing",     cn:"图灵",       era:"E1", country:"UK", year:1950, desc:"计算理论奠基人，提出图灵测试，定义了什么叫『机器智能』。"},
+  {id:"P-mccarthy", name:"John McCarthy",   cn:"麦卡锡",     era:"E1", country:"US", year:1956, desc:"达特茅斯会议召集人，1956 年正式提出『Artificial Intelligence』这一术语。"},
+  {id:"P-minsky",   name:"Marvin Minsky",   cn:"明斯基",     era:"E1", country:"US", year:1956, desc:"MIT AI 实验室创始人之一，符号主义灵魂人物。"},
+  {id:"P-newell",   name:"Allen Newell",    cn:"纽厄尔",     era:"E1", country:"US", year:1956, desc:"逻辑理论家、通用问题求解器（GPS）作者，符号 AI 早期核心人物。"},
+  {id:"P-simon",    name:"Herbert Simon",   cn:"司马贺",     era:"E1", country:"US", year:1956, desc:"诺奖经济学家 + 图灵奖得主，与 Newell 共同开拓符号 AI。"},
+  {id:"P-vapnik",   name:"Vladimir Vapnik", cn:"瓦普尼克",   era:"E2", country:"US", year:1995, desc:"统计学习理论奠基人，SVM 之父。"},
+  {id:"P-breiman",  name:"Leo Breiman",     cn:"布雷曼",     era:"E2", country:"US", year:2001, desc:"随机森林发明者，统计学派代表。"},
+  {id:"P-pearl",    name:"Judea Pearl",     cn:"朱迪亚·珀尔", era:"E2", country:"US", year:1988, desc:"贝叶斯网络与因果推断之父，2011 图灵奖。"},
+  {id:"P-hinton",   name:"Geoffrey Hinton", cn:"辛顿",       era:"E3", country:"CA", year:2006, desc:"深度学习教父，2006 年 DBN 论文重启神经网络浪潮。"},
+  {id:"P-lecun",    name:"Yann LeCun",      cn:"杨立昆",     era:"E3", country:"US", year:1998, desc:"CNN 之父，LeNet 作者，Meta AI 首席科学家。"},
+  {id:"P-bengio",   name:"Yoshua Bengio",   cn:"本希奥",     era:"E3", country:"CA", year:2014, desc:"深度学习三巨头之一，与 Hinton、LeCun 同获 2018 图灵奖。"},
+  {id:"P-feifei",   name:"Fei-Fei Li",      cn:"李飞飞",     era:"E3", country:"US", year:2009, desc:"ImageNet 缔造者，让深度学习有了试金石。"},
+  {id:"P-goodfellow",name:"Ian Goodfellow", cn:"古德费洛",   era:"E3", country:"CA", year:2014, desc:"GAN（生成对抗网络）发明者。"},
+  {id:"P-vaswani", name:"Ashish Vaswani et al.",cn:"Vaswani 等 8 人",era:"E4", country:"US", year:2017, desc:"《Attention is All You Need》作者团队，定义 Transformer。"},
+  {id:"P-devlin",  name:"Jacob Devlin",    cn:"德夫林",     era:"E4", country:"US", year:2018, desc:"BERT 一作，双向预训练范式开创者。"},
+  {id:"P-radford", name:"Alec Radford",    cn:"拉德福德",   era:"E4", country:"US", year:2018, desc:"GPT 系列灵魂人物，OpenAI 研究员。"},
+  {id:"P-ilya",    name:"Ilya Sutskever",  cn:"苏茨克沃",   era:"E4", country:"CA", year:2015, desc:"AlexNet 共同作者，OpenAI 联合创始人。"},
+  {id:"P-altman",   name:"Sam Altman",      cn:"奥特曼",    era:"E5", country:"US", year:2020, desc:"OpenAI CEO，把 ChatGPT 推向大众的人。"},
+  {id:"P-dario",    name:"Dario Amodei",    cn:"阿莫迪",    era:"E5", country:"US", year:2021, desc:"Anthropic CEO，Scaling Laws 与 RLHF 早期推动者。"},
+  {id:"P-demis",    name:"Demis Hassabis",  cn:"哈萨比斯",  era:"E5", country:"UK", year:2016, desc:"DeepMind 创始人，AlphaGo / AlphaFold 操盘手，2024 诺贝尔化学奖。"},
+  {id:"P-liangwenfeng",name:"Liang Wenfeng",cn:"梁文锋",    era:"E5", country:"CN", year:2024, desc:"DeepSeek 创始人，把开源大模型推到全球第一梯队。"},
+  {id:"P-yangzhilin",name:"Yang Zhilin",   cn:"杨植麟",    era:"E5", country:"CN", year:2023, desc:"月之暗面（Kimi）创始人，长上下文路线代表。"},
+];
+
+const ACHIEVEMENTS = [
+  {id:"A-eliza",   name:"ELIZA",          era:"E1", year:1966, country:"US", desc:"史上第一个心理咨询风格聊天机器人，揭示了规则的局限与魅力。"},
+  {id:"A-mycin",   name:"MYCIN",          era:"E1", year:1972, country:"US", desc:"医疗专家系统，代表符号 AI 在专业领域的巅峰。"},
+  {id:"A-shrdlu",  name:"SHRDLU",         era:"E1", year:1970, country:"US", desc:"积木世界自然语言对话系统，证明也证伪了符号方法。"},
+  {id:"A-svm",     name:"SVM",            era:"E2", year:1995, country:"US", desc:"支持向量机：靠核函数把世界掰直，2000 年代分类王者。"},
+  {id:"A-rf",      name:"随机森林",        era:"E2", year:2001, country:"US", desc:"Bagging + 决策树集成，至今仍是表格数据强基线。"},
+  {id:"A-bayes",   name:"贝叶斯网络",      era:"E2", year:1988, country:"US", desc:"概率图模型，把因果与不确定性数学化。"},
+  {id:"A-pagerank",name:"PageRank",       era:"E2", year:1998, country:"US", desc:"Google 起家算法，把网页链接当投票图。"},
+  {id:"A-alexnet", name:"AlexNet",        era:"E3", year:2012, country:"CA", desc:"GPU + ReLU + Dropout，2012 ImageNet 一战封神。"},
+  {id:"A-cnn",     name:"CNN",            era:"E3", year:1998, country:"US", desc:"卷积神经网络，视觉任务的脊梁。"},
+  {id:"A-lstm",    name:"RNN / LSTM",     era:"E3", year:1997, country:"US", desc:"循环网络与长短时记忆，序列建模的前 Transformer 王者。"},
+  {id:"A-gan",     name:"GAN",            era:"E3", year:2014, country:"CA", desc:"生成对抗网络，开启 AIGC 的视觉序章。"},
+  {id:"A-resnet",  name:"ResNet",         era:"E3", year:2015, country:"CN", desc:"何恺明等人提出残差连接，让百层网络成为可能。"},
+  {id:"A-w2v",     name:"Word2Vec",       era:"E3", year:2013, country:"US", desc:"把词变成向量，NLP 走进表示学习时代。"},
+  {id:"A-transformer",name:"Transformer", era:"E4", year:2017, country:"US", desc:"Self-Attention 架构，奠定此后所有大模型的地基。"},
+  {id:"A-bert",    name:"BERT",           era:"E4", year:2018, country:"US", desc:"双向编码预训练，刷爆 NLP 11 项任务。"},
+  {id:"A-gpt1",    name:"GPT-1 / GPT-2",  era:"E4", year:2018, country:"US", desc:"自回归预训练，证明『大就是好』的雏形。"},
+  {id:"A-t5",      name:"T5",             era:"E4", year:2019, country:"US", desc:"Text-to-Text 统一范式，万物皆为文本到文本。"},
+  {id:"A-gpt3",    name:"GPT-3",          era:"E5", year:2020, country:"US", desc:"175B 参数，少样本即可完成新任务，『涌现』被验证。"},
+  {id:"A-chatgpt", name:"ChatGPT",        era:"E5", year:2022, country:"US", desc:"5 天破百万用户，把大模型带出实验室。"},
+  {id:"A-gpt4",    name:"GPT-4",          era:"E5", year:2023, country:"US", desc:"多模态、强推理，重新设定 SOTA。"},
+  {id:"A-claude",  name:"Claude",         era:"E5", year:2023, country:"US", desc:"Anthropic 出品，Constitutional AI 与长上下文路线。"},
+  {id:"A-gemini",  name:"Gemini",         era:"E5", year:2023, country:"UK", desc:"Google DeepMind 多模态旗舰。"},
+  {id:"A-llama",   name:"Llama",          era:"E5", year:2023, country:"US", desc:"Meta 开源大模型，引爆开源生态。"},
+  {id:"A-qwen",    name:"Qwen",           era:"E5", year:2023, country:"CN", desc:"阿里通义千问，国产开源模型代表。"},
+  {id:"A-deepseek",name:"DeepSeek",       era:"E5", year:2024, country:"CN", desc:"高性价比推理模型，2024-2025 全球关注的中国大模型。"},
+  {id:"A-o1",      name:"o1 / 推理模型",   era:"E5", year:2024, country:"US", desc:"链式思维内化训练，开启 2025 的推理模型主流之年。"},
+];
+
+const EVENTS = [
+  {id:"V-turingtest",name:"图灵测试",       era:"E1", year:1950, country:"UK", type:"paper",      desc:"图灵论文《Computing Machinery and Intelligence》，提出『模仿游戏』。"},
+  {id:"V-dartmouth", name:"达特茅斯会议",   era:"E1", year:1956, country:"US", type:"conference", desc:"AI 正式诞生，『Artificial Intelligence』一词被命名。"},
+  {id:"V-winter1",   name:"第一次 AI 寒冬", era:"E1", year:1974, country:"US", type:"winter",     desc:"承诺过头 + 算力不足，研究经费骤减。"},
+  {id:"V-5gen",      name:"日本第五代计算机", era:"E1", year:1982, country:"JP", type:"conference", desc:"日本投入巨资发展逻辑式 AI，结局失败但点燃全球军备赛。"},
+  {id:"V-winter2",   name:"第二次 AI 寒冬", era:"E1", year:1987, country:"US", type:"winter",     desc:"专家系统破灭，AI 再次进入低谷。"},
+  {id:"V-deepblue",  name:"深蓝胜卡斯帕罗夫", era:"E2", year:1997, country:"US", type:"competition", desc:"IBM 深蓝击败国际象棋世界冠军，AI 首次震撼大众。"},
+  {id:"V-google",    name:"Google 上线 PageRank", era:"E2", year:1998, country:"US", type:"product", desc:"PageRank 把搜索引擎做成基础设施。"},
+  {id:"V-netflix",   name:"Netflix Prize",   era:"E2", year:2006, country:"US", type:"competition", desc:"百万美金推荐算法大赛，集成学习登场。"},
+  {id:"V-dbn",       name:"Hinton DBN 论文", era:"E3", year:2006, country:"CA", type:"paper", desc:"《A fast learning algorithm for deep belief nets》——『深度学习』之名正式确立。"},
+  {id:"V-imagenet12",name:"AlexNet 碾压 ImageNet", era:"E3", year:2012, country:"CA", type:"competition", desc:"Top-5 错误率从 26% 跌到 15%，深度学习正式爆发。"},
+  {id:"V-gan",       name:"GAN 论文",        era:"E3", year:2014, country:"CA", type:"paper", desc:"Goodfellow 提出生成对抗网络，AIGC 视觉起点。"},
+  {id:"V-alphago",   name:"AlphaGo 4:1 李世石", era:"E3", year:2016, country:"UK", type:"competition", desc:"DeepMind 击败围棋世界冠军，强化学习登顶大众视野。"},
+  {id:"V-attention", name:"《Attention is All You Need》", era:"E4", year:2017, country:"US", type:"paper", desc:"Google 8 人作者，Transformer 横空出世。"},
+  {id:"V-bert",      name:"BERT 发布",        era:"E4", year:2018, country:"US", type:"paper",   desc:"Google AI 发布 BERT，预训练 + 微调成为新范式。"},
+  {id:"V-gpt2",      name:"GPT-2 延迟开源",   era:"E4", year:2019, country:"US", type:"product", desc:"OpenAI 称模型『太危险』暂不开放完整权重，引发开源伦理争论。"},
+  {id:"V-gpt3",      name:"GPT-3 发布",       era:"E5", year:2020, country:"US", type:"product", desc:"175B 参数，少样本学习能力让世界相信『涌现』。"},
+  {id:"V-chatgpt",   name:"ChatGPT 上线",     era:"E5", year:2022, country:"US", type:"product", desc:"5 天破百万用户，2 个月破亿，AI 进入大众时代。"},
+  {id:"V-gpt4",      name:"GPT-4 多模态",     era:"E5", year:2023, country:"US", type:"product", desc:"图文输入 + 强推理，重新定义 SOTA。"},
+  {id:"V-claude35",  name:"Claude 3.5 系列",  era:"E5", year:2024, country:"US", type:"product", desc:"Anthropic 推出 Claude 3.5，编码与 Agent 能力跃迁。"},
+  {id:"V-o1",        name:"o1 推理模型",       era:"E5", year:2024, country:"US", type:"product", desc:"OpenAI 推理模型，链式思维成为训练目标。"},
+  {id:"V-deepseekv3",name:"DeepSeek-V3 / R1", era:"E5", year:2024, country:"CN", type:"product", desc:"低成本高性能开源模型，刷新全球认知。"},
+  {id:"V-reasoning", name:"推理模型成主流",    era:"E5", year:2025, country:"US", type:"paper",   desc:"2025 年推理模型成为主流范式，Agent 与工具使用全面普及。"},
+];
+
+/* relations */
+const REL = [];
+PEOPLE.forEach(p=>REL.push({from:p.id,to:p.era,kind:"in"}));
+ACHIEVEMENTS.forEach(a=>REL.push({from:a.id,to:a.era,kind:"in"}));
+EVENTS.forEach(e=>REL.push({from:e.id,to:e.era,kind:"in"}));
+const cur = [
+  ["P-turing","V-turingtest"],
+  ["P-mccarthy","V-dartmouth"],["P-minsky","V-dartmouth"],["P-newell","V-dartmouth"],["P-simon","V-dartmouth"],
+  ["P-newell","A-shrdlu"],["P-minsky","A-eliza"],["P-simon","A-mycin"],
+  ["P-vapnik","A-svm"],["P-breiman","A-rf"],["P-pearl","A-bayes"],
+  ["P-hinton","V-dbn"],["P-hinton","A-alexnet"],["P-ilya","A-alexnet"],
+  ["P-lecun","A-cnn"],["P-bengio","A-gan"],["P-goodfellow","A-gan"],["P-goodfellow","V-gan"],
+  ["P-feifei","V-imagenet12"],["P-feifei","A-alexnet"],
+  ["P-vaswani","A-transformer"],["P-vaswani","V-attention"],
+  ["P-devlin","A-bert"],["P-devlin","V-bert"],
+  ["P-radford","A-gpt1"],["P-radford","V-gpt2"],["P-radford","A-gpt3"],
+  ["P-ilya","A-gpt3"],["P-ilya","A-chatgpt"],
+  ["P-altman","A-chatgpt"],["P-altman","V-chatgpt"],["P-altman","V-gpt4"],["P-altman","A-o1"],["P-altman","V-o1"],
+  ["P-dario","A-claude"],["P-dario","V-claude35"],
+  ["P-demis","V-alphago"],["P-demis","A-gemini"],
+  ["P-liangwenfeng","A-deepseek"],["P-liangwenfeng","V-deepseekv3"],
+];
+cur.forEach(([a,b])=>REL.push({from:a,to:b,kind:"link"}));
+[["A-alexnet","V-imagenet12"],["A-gan","V-gan"],["A-transformer","V-attention"],
+ ["A-bert","V-bert"],["A-gpt1","V-gpt2"],["A-gpt3","V-gpt3"],
+ ["A-chatgpt","V-chatgpt"],["A-gpt4","V-gpt4"],["A-claude","V-claude35"],
+ ["A-o1","V-o1"],["A-deepseek","V-deepseekv3"]].forEach(([a,b])=>REL.push({from:a,to:b,kind:"flows"}));
+for(let i=0;i<ERAS.length-1;i++) REL.push({from:ERAS[i].id,to:ERAS[i+1].id,kind:"era-chain"});
+
+/* =================================================================
+   STATE
+   ================================================================= */
+const state = {
+  view:"network",
+  eras:new Set(["1","2","3","4","5"]),
+  kinds:new Set(["person","achievement","event"]),
+  events:new Set(["paper","product","competition","winter","conference"]),
+  countries:new Set(["US","UK","CN","CA","JP","FR"]),
+  q:"",
+};
+const ALL = (()=>{
+  const a=[];
+  ERAS.forEach(e=>a.push({...e,kind:"era"}));
+  PEOPLE.forEach(p=>a.push({...p,kind:"person"}));
+  ACHIEVEMENTS.forEach(x=>a.push({...x,kind:"achievement"}));
+  EVENTS.forEach(e=>a.push({...e,kind:"event"}));
+  return a;
+})();
+const ID = Object.fromEntries(ALL.map(n=>[n.id,n]));
+const eraIdx = id=>Number(id.replace("E",""));
+const eraColor = id=>ERAS[eraIdx(id)-1].color;
+
+function passFilter(n){
+  if(!n) return false;
+  if(n.kind==="era") return state.eras.has(String(eraIdx(n.id)));
+  if(!state.kinds.has(n.kind)) return false;
+  if(!state.eras.has(String(eraIdx(n.era)))) return false;
+  if(n.country && !state.countries.has(n.country)) return false;
+  if(n.kind==="event" && !state.events.has(n.type)) return false;
+  if(state.q){
+    const q=state.q.toLowerCase();
+    const blob=[n.name,n.cn,n.desc,n.year].filter(Boolean).join(" ").toLowerCase();
+    if(!blob.includes(q)) return false;
+  }
+  return true;
+}
+
+/* =================================================================
+   VIEW SWITCH
+   ================================================================= */
+function setView(v){
+  state.view=v;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===v));
+  document.getElementById("view-network").classList.toggle("active",v==="network");
+  document.getElementById("view-timeline").classList.toggle("active",v==="timeline");
+  if(v==="network" && net) setTimeout(()=>net.redraw(),50);
+}
+
+/* =================================================================
+   FILTER UI
+   ================================================================= */
+function applyFilters(){
+  if(dsNodes){
+    const upd=[];
+    dsNodes.forEach(node=>{
+      const meta = ID[node.id];
+      const hidden = !passFilter(meta);
+      if(node.hidden!==hidden) upd.push({id:node.id,hidden});
+    });
+    if(upd.length) dsNodes.update(upd);
+    const ue=[];
+    dsEdges.forEach(e=>{
+      const a=ID[e.from], b=ID[e.to];
+      const hidden = !(passFilter(a) && passFilter(b));
+      if(e.hidden!==hidden) ue.push({id:e.id,hidden});
+    });
+    if(ue.length) dsEdges.update(ue);
+  }
+  document.querySelectorAll(".era").forEach(col=>{
+    const on = state.eras.has(col.dataset.era);
+    col.classList.toggle("dim", !on);
+    col.querySelectorAll(".event").forEach(ev=>{
+      const t=ev.dataset.type, c=ev.dataset.country;
+      let show=true;
+      if(t && !state.events.has(t)) show=false;
+      if(c && !state.countries.has(c)) show=false;
+      if(state.q && !ev.textContent.toLowerCase().includes(state.q.toLowerCase())) show=false;
+      ev.style.display = show?"":"none";
+    });
+    col.querySelectorAll(".p").forEach(p=>{
+      const c=p.dataset.country;
+      let show=true;
+      if(c && !state.countries.has(c)) show=false;
+      if(state.q && !p.textContent.toLowerCase().includes(state.q.toLowerCase())) show=false;
+      p.style.display = show?"":"none";
+    });
+  });
+  updateStats();
+}
+
+function updateStats(){
+  let n=0,e=0;
+  if(dsNodes){ dsNodes.forEach(x=>{if(!x.hidden)n++}); dsEdges.forEach(x=>{if(!x.hidden)e++}); }
+  document.getElementById("s-node").textContent = n;
+  document.getElementById("s-edge").textContent = e;
+  document.getElementById("s-era").textContent = state.eras.size;
+  document.getElementById("f-node").textContent = n;
+  document.getElementById("f-edge").textContent = e;
+  document.getElementById("f-era").textContent = state.eras.size;
+}
+
+/* =================================================================
+   NETWORK
+   ================================================================= */
+let net=null, dsNodes=null, dsEdges=null;
+function buildNetwork(){
+  try{
+    if(typeof vis==="undefined"){
+      document.getElementById("network").innerHTML =
+        '<div style="position:absolute;inset:0;display:grid;place-items:center;color:#52f3ff;font-family:Space Mono,monospace;font-size:13px;letter-spacing:.15em">// vis-network failed to load — check network</div>';
+      return;
+    }
+    const nodes=[],edges=[];
+    ALL.forEach(n=>{
+      const c = n.kind==="era" ? n.color : eraColor(n.era);
+      let shape,size,font,bg;
+      if(n.kind==="person"){shape="hexagon";size=14;font={color:"#eef0ff",face:"Rajdhani",size:14,strokeWidth:0};bg="rgba(8,8,15,.8)"}
+      else if(n.kind==="era"){shape="box";size=22;font={color:"#04040a",face:"Big Shoulders Display",size:16,bold:{color:"#04040a"},strokeWidth:0};bg=c}
+      else if(n.kind==="achievement"){shape="dot";size=11;font={color:"#ffb300",face:"Rajdhani",size:13,strokeWidth:0};bg="rgba(8,8,15,.8)"}
+      else {shape="diamond";size=12;font={color:"#c6ff3d",face:"Rajdhani",size:13,strokeWidth:0};bg="rgba(8,8,15,.8)"}
+
+      const label = n.kind==="era" ? `  ${n.num}  ${n.name}  ` :
+                    n.kind==="person" ? (n.cn||n.name) :
+                    n.name;
+      const title = (n.kind==="era"
+          ? `<b>${n.name}</b> · ${n.yr}<br/>${n.idea}`
+          : `<b>${n.name}${n.cn?` ・ ${n.cn}`:""}</b><br/>${n.year||""} ${n.country?"· "+n.country:""}<br/>${n.desc||""}`);
+
+      nodes.push({
+        id:n.id, label, shape, size,
+        color:{ background:bg, border:c, highlight:{background:c,border:"#ffffff"} },
+        borderWidth: n.kind==="era"?0:1.5,
+        shadow:{enabled:true, color:c, size:n.kind==="era"?22:14, x:0, y:0},
+        font, title,
+        hidden:!passFilter(n),
+      });
+    });
+
+    REL.forEach((r,i)=>{
+      const a=ID[r.from], b=ID[r.to];
+      if(!a||!b)return;
+      const color = r.kind==="era-chain" ? "#ff2bd6"
+                  : r.kind==="flows" ? "#ffb300"
+                  : r.kind==="link" ? "#52f3ff"
+                  : "rgba(176,123,255,.3)";
+      edges.push({
+        id:"e"+i, from:r.from, to:r.to,
+        color:{color, opacity:r.kind==="in"?.22:.6, highlight:"#ffffff"},
+        width:r.kind==="era-chain"?2:(r.kind==="in"?.6:1.1),
+        dashes:r.kind==="in"?[2,5]:false,
+        smooth:{type:"continuous",roundness:.3},
+        arrows: r.kind==="era-chain"?{to:{enabled:true,scaleFactor:.7,type:"vee"}} : undefined,
+        hidden: !(passFilter(a) && passFilter(b)),
+      });
+    });
+
+    dsNodes = new vis.DataSet(nodes);
+    dsEdges = new vis.DataSet(edges);
+
+    net = new vis.Network(document.getElementById("network"), {nodes:dsNodes, edges:dsEdges}, {
+      interaction:{hover:true, tooltipDelay:140, navigationButtons:false, keyboard:false},
+      physics:{
+        solver:"forceAtlas2Based",
+        forceAtlas2Based:{gravitationalConstant:-58, centralGravity:.008, springLength:140, springConstant:.08, damping:.55, avoidOverlap:.65},
+        stabilization:{iterations:700, fit:true},
+        maxVelocity:32,
+      },
+      nodes:{borderWidthSelected:3},
+      edges:{selectionWidth:2.2},
+    });
+
+    net.on("click",p=>{
+      if(p.nodes && p.nodes.length){ openDetail(p.nodes[0]); }
+      else closeDetail();
+    });
+    net.on("stabilizationIterationsDone",()=>{ net.setOptions({physics:{enabled:false}}); });
+
+    updateStats();
+  }catch(err){
+    console.error("network build failed",err);
+  }
+}
+
+function openDetail(id){
+  const n = ID[id]; if(!n) return;
+  const pane=document.getElementById("detail");
+  const tag=document.getElementById("d-tag");
+  const title=document.getElementById("d-title");
+  const cn=document.getElementById("d-cn");
+  const meta=document.getElementById("d-meta");
+  const desc=document.getElementById("d-desc");
+  const rels=document.getElementById("d-rels");
+
+  const tagMap={era:"ERA · 时期",person:"PERSON · 人物",achievement:"ACHIEVEMENT · 成果",event:"EVENT · 事件"};
+  tag.textContent = tagMap[n.kind];
+  tag.style.color = n.kind==="era"? n.color : eraColor(n.era);
+
+  if(n.kind==="era"){
+    title.textContent = `${n.num} · ${n.name}`;
+    cn.textContent = n.accent;
+    meta.innerHTML = `<span>${n.yr}</span><span class="pill" style="color:${n.color};border-color:${n.color}">ERA</span>`;
+    desc.textContent = n.idea;
+  } else {
+    title.textContent = n.name;
+    cn.textContent = n.cn && n.cn!==n.name ? n.cn : "";
+    const era = ERAS[eraIdx(n.era)-1];
+    meta.innerHTML =
+      `<span><b>${n.year||"—"}</b></span>` +
+      `<span>${n.country||"—"}</span>` +
+      `<span class="pill" style="color:${era.color};border-color:${era.color}">${era.name}</span>` +
+      (n.type?`<span>${n.type.toUpperCase()}</span>`:"");
+    desc.textContent = n.desc;
+  }
+
+  const linked = REL.filter(r=>r.from===id||r.to===id)
+    .map(r=>r.from===id?r.to:r.from).map(x=>ID[x]).filter(x=>x && x.id!==id);
+  const uniq=[...new Map(linked.map(x=>[x.id,x])).values()].slice(0,20);
+  rels.innerHTML = uniq.length
+    ? `<h5>// LINKED · ${uniq.length}</h5>` + uniq.map(x=>`<span data-id="${x.id}">${x.cn||x.name}</span>`).join("")
+    : "";
+  rels.querySelectorAll("span[data-id]").forEach(s=>s.onclick=()=>{
+    if(net){ net.focus(s.dataset.id,{scale:1.3,animation:true}); }
+    openDetail(s.dataset.id);
+  });
+  pane.classList.add("show");
+}
+function closeDetail(){document.getElementById("detail").classList.remove("show")}
+
+/* =================================================================
+   TIMELINE
+   ================================================================= */
+function buildTimeline(){
+  const yStart=1950,yEnd=2025,span=yEnd-yStart;
+  const axis=document.getElementById("axis");
+  axis.innerHTML="";
+  for(let y=yStart;y<=yEnd;y+=5){
+    const t=document.createElement("div");
+    t.className="tick"+(y%10===0?" major":"");
+    t.style.left=((y-yStart)/span*100)+"%";
+    if(y%10===0){ const s=document.createElement("span"); s.textContent=y; t.appendChild(s); }
+    axis.appendChild(t);
+  }
+  ERAS.forEach(e=>{
+    const b=document.createElement("div");
+    b.className="era-band";
+    const L=((e.span[0]-yStart)/span)*100;
+    const W=((e.span[1]-e.span[0])/span)*100;
+    b.style.left=L+"%"; b.style.width=W+"%"; b.style.color=e.color;
+    b.innerHTML=`<span>${e.num} · ${e.name}</span>`;
+    axis.appendChild(b);
+  });
+
+  const tl=document.getElementById("timeline");
+  tl.innerHTML="";
+  ERAS.forEach((e,i)=>{
+    const col=document.createElement("div");
+    col.className=`era e${i+1}`;
+    col.dataset.era=String(i+1);
+    const people = PEOPLE.filter(p=>p.era===e.id);
+    const ach    = ACHIEVEMENTS.filter(a=>a.era===e.id);
+    const evs    = EVENTS.filter(v=>v.era===e.id).sort((a,b)=>a.year-b.year);
+    col.innerHTML = `
+      <div class="stamp">
+        <div class="L">
+          <div class="num">${e.num}</div>
+          <div class="yr">${e.yr}</div>
+        </div>
+        <div class="R">${e.accent.toUpperCase()}<br/><b>ERA · ${e.num}</b></div>
+      </div>
+      <div class="name">${e.name}<span class="en">${e.accent}</span></div>
+      <div class="idea">${e.idea}</div>
+
+      <div class="sec">
+        <div class="sec-hd"><span>// 标志事件</span><span class="cnt">${evs.length} ITEMS</span></div>
+        ${evs.map(v=>`<div class="event" data-id="${v.id}" data-type="${v.type}" data-country="${v.country}">
+            <span class="yr">${v.year}</span><span class="tt">${v.name}</span>
+          </div>`).join("")}
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd"><span>// 代表成果</span><span class="cnt">${ach.length} ITEMS</span></div>
+        ${ach.map(a=>`<div class="event" data-id="${a.id}" data-country="${a.country}">
+            <span class="yr">${a.year}</span><span class="tt">${a.name}</span>
+          </div>`).join("")}
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd"><span>// 代表人物</span><span class="cnt">${people.length} ITEMS</span></div>
+        <div class="people">
+          ${people.map(p=>`<span class="p" data-id="${p.id}" data-country="${p.country}">${p.cn||p.name}</span>`).join("")}
+        </div>
+      </div>
+    `;
+    tl.appendChild(col);
+  });
+
+  tl.querySelectorAll(".event, .p").forEach(el=>{
+    el.addEventListener("click",()=>{
+      setView("network");
+      setTimeout(()=>{ if(net){ net.focus(el.dataset.id,{scale:1.5,animation:true}); } openDetail(el.dataset.id); },380);
+    });
+  });
+}
+
+/* =================================================================
+   EVENT BINDINGS (set up first, before any heavy work)
+   ================================================================= */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>setView(t.dataset.view));
+});
+document.querySelectorAll(".chip").forEach(c=>{
+  c.addEventListener("click",()=>{
+    c.classList.toggle("on");
+    const on=c.classList.contains("on");
+    if(c.dataset.era){ on?state.eras.add(c.dataset.era):state.eras.delete(c.dataset.era); }
+    if(c.dataset.type){ on?state.kinds.add(c.dataset.type):state.kinds.delete(c.dataset.type); }
+    if(c.dataset.event){ on?state.events.add(c.dataset.event):state.events.delete(c.dataset.event); }
+    if(c.dataset.country){ on?state.countries.add(c.dataset.country):state.countries.delete(c.dataset.country); }
+    applyFilters();
+  });
+});
+document.getElementById("q").addEventListener("input",e=>{ state.q=e.target.value.trim(); applyFilters(); });
+document.getElementById("d-close").addEventListener("click",closeDetail);
+document.addEventListener("keydown",e=>{
+  if(e.key==="/" && document.activeElement.tagName!=="INPUT"){ e.preventDefault(); document.getElementById("q").focus(); }
+  if(e.key==="Escape"){ closeDetail(); document.getElementById("q").blur(); }
+  if(e.key==="1") setView("network");
+  if(e.key==="2") setView("timeline");
+});
+
+/* clock */
+function tick(){
+  const d=new Date(), pad=n=>String(n).padStart(2,"0");
+  document.getElementById("clock").textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+setInterval(tick,1000); tick();
+
+/* boot */
+buildTimeline();
+buildNetwork();
+</script>
+</body>
+</html>
